@@ -4,7 +4,7 @@ import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useState } from "react"
 
-import { authClient, useSession } from "@/lib/auth-client"
+import { signOut, useSession } from "@/lib/auth-client"
 import { Logo } from "@/components/logo"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -109,7 +109,8 @@ export function Navbar() {
 
   async function handleSignOut() {
     setMobileOpen(false)
-    await authClient.signOut()
+    // Shared store: `useSession` above updates automatically after this.
+    await signOut()
     router.push("/")
     router.refresh()
   }
@@ -156,18 +157,7 @@ export function Navbar() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-5">
-                <NavLink
-                  href="/dashboard"
-                  label="Dashboard"
-                  active={pathname === "/dashboard"}
-                />
-                <NavLink
-                  href="/update-profile"
-                  label="Update Profile"
-                  active={pathname === "/update-profile"}
-                />
-              </div>
+             
 
               <Button
                 variant="outline"
@@ -262,20 +252,7 @@ export function Navbar() {
                     <RoleBadge role={role} />
                   </div>
                 </div>
-                <Link
-                  href="/dashboard"
-                  onClick={closeMobileMenu}
-                  className="rounded-md px-3 py-2 text-sm text-neutral-300 hover:bg-neutral-800 hover:text-white"
-                >
-                  Dashboard
-                </Link>
-                <Link
-                  href="/update-profile"
-                  onClick={closeMobileMenu}
-                  className="rounded-md px-3 py-2 text-sm text-neutral-300 hover:bg-neutral-800 hover:text-white"
-                >
-                  Update Profile
-                </Link>
+            
                 <Button
                   variant="outline"
                   onClick={handleSignOut}

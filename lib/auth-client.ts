@@ -1,8 +1,8 @@
 import { createAuthClient } from "better-auth/react"
-export const authClient = createAuthClient({
-  /** The base URL of the server (optional if you're using the same domain) */
- baseURL: process.env.BETTER_AUTH_URL,
-})
 
+// Single shared auth client — the navbar and every auth page must use this
+// same instance, otherwise they each get their own session store and stop
+// seeing each other's changes (e.g. sign-out not updating the navbar).
+export const authClient = createAuthClient()
 
-export const { signIn, signUp, useSession } = createAuthClient()
+export const { signIn, signUp, signOut, useSession } = authClient
