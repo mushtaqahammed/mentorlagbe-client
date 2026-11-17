@@ -19,3 +19,14 @@ To use the components in your app, import them as follows:
 ```tsx
 import { Button } from "@/components/ui/button";
 ```
+
+
+
+
+
+---------website---------
+## Navber requierment
+Logo & Brand Name: MentorLagbe (keep the heading/logo the same style and size as on the home page).
+Public Navigation Items: Home (/), Browse Tuitions (/tuitions), Pricing / Pro Plans (/pricing), and How It Works / About.
+Navbar State for Unauthenticated Users: Show 'Sign In' and 'Sign Up' buttons.
+Navbar State for Authenticated Users: Display User Profile Image (Avatar), User Name & Role Badge (Student / Tutor / Admin), 'Dashboard' link, 'Update Profile' link, and a 'Sign Out' button.
