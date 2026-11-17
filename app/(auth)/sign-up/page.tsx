@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation"
 
 import {
   AuthInput,
+  AuthSelect,
   AuthShell,
   Divider,
   GoogleButton,
@@ -18,7 +19,10 @@ type SignUpData = {
   name: string
   email: string
   password: string
+  role: string
 }
+
+const ROLES = ["Student", "Tutor", "Admin"] as const
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -39,6 +43,8 @@ export default function SignUpPage() {
         name: data.name,
         email: data.email,
         password: data.password,
+        // Custom field declared in lib/auth.ts (user.additionalFields).
+        role: data.role,
 
         // Callback URL
         callbackURL: "/",
@@ -91,9 +97,15 @@ export default function SignUpPage() {
       return
     }
 
+    if (!data.role || !ROLES.includes(data.role as (typeof ROLES)[number])) {
+      setError("Please select whether you are a Student, Tutor, or Admin.")
+      return
+    }
+
     console.log("Sign-up form data:", {
       name: data.name.trim(),
       email: data.email.trim(),
+      role: data.role,
       password: "[REDACTED]",
     })
 
@@ -101,6 +113,7 @@ export default function SignUpPage() {
       name: data.name.trim(),
       email: data.email.trim(),
       password: data.password,
+      role: data.role,
     })
   }
 
@@ -142,6 +155,18 @@ export default function SignUpPage() {
           autoComplete="email"
           required
         />
+
+        <AuthSelect
+          label="I am a"
+          id="role"
+          name="role"
+          defaultValue="Student"
+          required
+        >
+          <option value="Student">Student</option>
+          <option value="Tutor">Tutor</option>
+          <option value="Admin">Admin</option>
+        </AuthSelect>
 
         <AuthInput
           label="Password"

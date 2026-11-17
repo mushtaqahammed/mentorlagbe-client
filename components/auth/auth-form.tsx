@@ -177,6 +177,7 @@ export function AuthInput({
   label,
   id,
   icon,
+  type,
   ...props
 }: InputHTMLAttributes<HTMLInputElement> & {
   label: string
@@ -184,7 +185,7 @@ export function AuthInput({
   icon?: "mail" | "lock" | "user"
 }) {
   const [visible, setVisible] = useState(false)
-  const isPassword = props.type === "password"
+  const isPassword = type === "password"
 
   return (
     <div className="flex flex-col gap-1.5">
@@ -195,8 +196,9 @@ export function AuthInput({
         {icon && <FieldIcon name={icon} />}
         <input
           id={id}
-          type={isPassword && visible ? "text" : props.type}
           {...props}
+          // Applied after the spread so the show/hide toggle can override it.
+          type={isPassword && visible ? "text" : type}
           className={cn(
             inputClasses,
             icon && "pl-11",
