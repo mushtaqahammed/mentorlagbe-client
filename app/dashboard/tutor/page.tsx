@@ -1,11 +1,10 @@
-import React from 'react';
+import { DashboardPage } from "@/components/dashboard/dashboard-page"
 
-const TutorDashboardPage = () => {
+export default function TutorDashboardPage() {
   return (
-    <div>
-      
-    </div>
-  );
-};
-
-export default TutorDashboardPage;
+    <DashboardPage
+      title="Tutor Overview"
+      description="Manage your tuition posts, review applicants, and keep your profile up to date."
+    />
+  )
+}

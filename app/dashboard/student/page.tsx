@@ -1,11 +1,10 @@
-import React from 'react';
+import { DashboardPage } from "@/components/dashboard/dashboard-page"
 
-const StudentDashboardPage = () => {
+export default function StudentDashboardPage() {
   return (
-    <div>
-      
-    </div>
-  );
-};
-
-export default StudentDashboardPage;
+    <DashboardPage
+      title="Student Overview"
+      description="Keep track of the tuitions you have applied for and your MentorLagbe subscription."
+    />
+  )
+}

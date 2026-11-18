@@ -1,11 +1,10 @@
-import React from 'react';
+import { DashboardPage } from "@/components/dashboard/dashboard-page"
 
-const AdminDashboardPage = () => {
+export default function AdminDashboardPage() {
   return (
-    <div>
-      
-    </div>
-  );
-};
-
-export default AdminDashboardPage;
+    <DashboardPage
+      title="Admin Overview"
+      description="Review new tuitions, manage users, and keep an eye on platform transactions."
+    />
+  )
+}
