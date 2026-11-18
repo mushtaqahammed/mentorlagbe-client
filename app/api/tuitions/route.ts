@@ -38,22 +38,26 @@ async function sendToBackend(path: string, body: unknown) {
 }
 
 export async function GET() {
-  const tutor = await getTutor()
-
-  if (!tutor) {
-    return errorResponse("Unauthorized", 401)
-  }
-
   try {
-    const response = await sendToBackend("/api/tuitions/summary", {
-      tutor: { id: tutor.id },
+    const baseUrl = process.env.BACKEND_API_URL || "http://localhost:5000"
+
+    const response = await fetch(`${baseUrl}/all-tuitions`, {
+      cache: "no-store",
     })
+
+    if (!response.ok) {
+      console.error(
+        `Backend /all-tuitions responded with status ${response.status}`
+      )
+      return errorResponse("Could not load tuition posts.", 502)
+    }
 
     const data = await response.json()
 
     return Response.json(data)
-  } catch {
-    return errorResponse("Server error", 500)
+  } catch (error) {
+    console.error("Error fetching tuitions from backend:", error)
+    return errorResponse("Could not load tuition posts.", 502)
   }
 }
 
