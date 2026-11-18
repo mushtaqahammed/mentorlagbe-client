@@ -1,10 +1,9 @@
-import { DashboardPage } from "@/components/dashboard/dashboard-page"
+import { StudentDashboard } from "@/components/student/student-dashboard"
+
+export const metadata = {
+  title: "Student Overview | MentorLagbe",
+}
 
 export default function StudentDashboardPage() {
-  return (
-    <DashboardPage
-      title="Student Overview"
-      description="Keep track of the tuitions you have applied for and your MentorLagbe subscription."
-    />
-  )
+  return <StudentDashboard />
 }

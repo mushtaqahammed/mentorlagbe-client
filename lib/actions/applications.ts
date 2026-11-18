@@ -32,6 +32,29 @@ export type ApplicationDetails = {
   note?: string
 }
 
+export type StudentStats = {
+  totalApplied: number
+  accepted: number
+  pending: number
+  plan: string
+}
+
+export type StudentApplication = {
+  id: string
+  tuitionId: string
+  tuitionTitle: string
+  tutorName: string
+  tutorEmail: string
+  monthlyFee: number
+  applicationDate: string
+  status: ApplicationStatus
+}
+
+export type StudentApplicationsResponse = {
+  applications: StudentApplication[]
+  stats: ApplicantStats
+}
+
 const BASE_URL = process.env.BACKEND_API_URL || "http://localhost:5000"
 
 function authHeaders(token: string) {
@@ -44,6 +67,50 @@ function authHeaders(token: string) {
 async function parseError(res: Response, fallback: string) {
   const data = await res.json().catch(() => null)
   throw new Error(data?.error || fallback)
+}
+
+export const getStudentStats = async (token: string): Promise<StudentStats> => {
+  const res = await fetch(`${BASE_URL}/student-stats`, {
+    headers: authHeaders(token),
+    cache: "no-store",
+  })
+
+  if (!res.ok) {
+    await parseError(res, "Could not load your dashboard statistics.")
+  }
+
+  return res.json()
+}
+
+export const getStudentApplications = async (
+  token: string
+): Promise<StudentApplicationsResponse> => {
+  const res = await fetch(`${BASE_URL}/student-applications`, {
+    headers: authHeaders(token),
+    cache: "no-store",
+  })
+
+  if (!res.ok) {
+    await parseError(res, "Could not load your applications.")
+  }
+
+  return res.json()
+}
+
+export const deleteStudentApplication = async (id: string, token: string) => {
+  const res = await fetch(
+    `${BASE_URL}/applications/${encodeURIComponent(id)}`,
+    {
+      method: "DELETE",
+      headers: authHeaders(token),
+    }
+  )
+
+  if (!res.ok) {
+    await parseError(res, "Could not cancel this application.")
+  }
+
+  return res.json()
 }
 
 export const getTutorApplicants = async (

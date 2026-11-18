@@ -11,75 +11,19 @@ import {
   Plus,
   RefreshCw,
   Users,
-  type LucideIcon,
 } from "lucide-react"
 
 import { DashboardPage } from "@/components/dashboard/dashboard-page"
+import {
+  StatCard,
+  StatSkeleton,
+  formatCount,
+  formatPlan,
+} from "@/components/dashboard/stat-card"
 import { Button } from "@/components/ui/button"
-import { Skeleton } from "@/components/ui/skeleton"
 import { getTutorStats, type TutorStats } from "@/lib/actions/tuition"
 import { authClient } from "@/lib/auth-client"
 import { cn } from "@/lib/utils"
-
-function StatCard({
-  label,
-  value,
-  hint,
-  icon: Icon,
-  accent,
-}: {
-  label: string
-  value: string
-  hint: string
-  icon: LucideIcon
-  accent: string
-}) {
-  return (
-    <div className="rounded-2xl border border-white/10 bg-neutral-950/60 p-5 shadow-lg shadow-black/10 transition-all hover:-translate-y-0.5 hover:border-lime-400/30">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-xs font-medium text-neutral-400">{label}</p>
-          <p className="mt-3 text-3xl font-bold tracking-tight text-white">
-            {value}
-          </p>
-        </div>
-        <span
-          className={cn(
-            "flex size-10 shrink-0 items-center justify-center rounded-xl ring-1",
-            accent
-          )}
-        >
-          <Icon className="size-5" aria-hidden="true" />
-        </span>
-      </div>
-      <p className="mt-4 text-xs text-neutral-500">{hint}</p>
-    </div>
-  )
-}
-
-function StatSkeleton() {
-  return (
-    <div className="rounded-2xl border border-white/10 bg-neutral-950/60 p-5">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex-1">
-          <Skeleton className="h-3 w-28 bg-white/10" />
-          <Skeleton className="mt-4 h-8 w-16 bg-white/10" />
-        </div>
-        <Skeleton className="size-10 rounded-xl bg-white/10" />
-      </div>
-      <Skeleton className="mt-4 h-3 w-32 bg-white/10" />
-    </div>
-  )
-}
-
-function formatCount(value: number) {
-  return String(value).padStart(2, "0")
-}
-
-function formatPlan(value: string) {
-  const plan = value || "free"
-  return plan.charAt(0).toUpperCase() + plan.slice(1)
-}
 
 export function TutorDashboard() {
   const [stats, setStats] = React.useState<TutorStats | null>(null)
