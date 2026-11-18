@@ -38,6 +38,15 @@ export type TuitionInput = {
   bannerImage: string
 }
 
+export type TuitionRecord = TuitionInput & {
+  id: string
+  tutorId: string
+  approvalStatus: "Pending" | "Approved" | "Rejected"
+  status: "Active" | "Closed"
+  createdAt: string
+  updatedAt?: string | null
+}
+
 export type PlanUsage = {
   plan: "free" | "pro"
   used: number
@@ -48,17 +57,77 @@ export type PlanUsage = {
 
 const BASE_URL = process.env.BACKEND_API_URL || "http://localhost:5000"
 
+function authHeaders(token: string) {
+  return {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`,
+  }
+}
+
 export const createTuition = async (
   tuitionData: TuitionInput,
   token: string
 ) => {
   const res = await fetch(`${BASE_URL}/tuitions`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
+    headers: authHeaders(token),
     body: JSON.stringify(tuitionData),
   })
+  return res.json()
+}
+
+export const getMyTuitions = async (
+  userId: string,
+  token: string
+): Promise<TuitionRecord[]> => {
+  const res = await fetch(
+    `${BASE_URL}/tuitions?tutorId=${encodeURIComponent(userId)}`,
+    {
+      headers: authHeaders(token),
+      cache: "no-store",
+    }
+  )
+
+  if (!res.ok) throw new Error("Could not load your tuitions.")
+  return res.json()
+}
+
+export const updateTuition = async (
+  id: string,
+  tuitionData: TuitionInput,
+  token: string
+) => {
+  const res = await fetch(`${BASE_URL}/tuitions/${id}`, {
+    method: "PUT",
+    headers: authHeaders(token),
+    body: JSON.stringify(tuitionData),
+  })
+
+  if (!res.ok) throw new Error("Could not update this tuition.")
+  return res.json()
+}
+
+export const updateTuitionStatus = async (
+  id: string,
+  status: "Active" | "Closed",
+  token: string
+) => {
+  const res = await fetch(`${BASE_URL}/tuitions/${id}/status`, {
+    method: "PATCH",
+    headers: authHeaders(token),
+    body: JSON.stringify({ status }),
+  })
+
+  if (!res.ok) throw new Error("Could not change this tuition status.")
+  return res.json()
+}
+
+export const deleteTuition = async (id: string, token: string) => {
+  const res = await fetch(`${BASE_URL}/tuitions/${id}`, {
+    method: "DELETE",
+    headers: authHeaders(token),
+  })
+
+  if (!res.ok) throw new Error("Could not delete this tuition.")
   return res.json()
 }
