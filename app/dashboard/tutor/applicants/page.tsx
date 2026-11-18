@@ -1,10 +1,9 @@
-import { DashboardPage } from "@/components/dashboard/dashboard-page"
+import { ManageApplicants } from "@/components/tutor/manage-applicants"
+
+export const metadata = {
+  title: "Manage Applicants | MentorLagbe",
+}
 
 export default function ManageApplicantsPage() {
-  return (
-    <DashboardPage
-      title="Manage Applicants"
-      description="Review student applications and shortlist the best matches for your tuitions."
-    />
-  )
+  return <ManageApplicants />
 }

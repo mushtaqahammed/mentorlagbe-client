@@ -1,3 +1,5 @@
+import type { ApplicationDetails } from "./applications"
+
 export const SUBJECT_OPTIONS = [
   "Mathematics",
   "Physics",
@@ -73,6 +75,12 @@ export const createTuition = async (
     headers: authHeaders(token),
     body: JSON.stringify(tuitionData),
   })
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => null)
+    throw new Error(data?.error || "Could not post this tuition.")
+  }
+
   return res.json()
 }
 
@@ -132,12 +140,34 @@ export const deleteTuition = async (id: string, token: string) => {
   return res.json()
 }
 
-export const applyForTuition = async (id: string, token: string) => {
+export type TutorStats = {
+  totalTuitions: number
+  activeApprovedTuitions: number
+  totalApplicants: number
+  plan: string
+}
+
+export const getTutorStats = async (token: string): Promise<TutorStats> => {
+  const res = await fetch(`${BASE_URL}/tutor-stats`, {
+    headers: authHeaders(token),
+    cache: "no-store",
+  })
+
+  if (!res.ok) throw new Error("Could not load your dashboard statistics.")
+  return res.json()
+}
+
+export const applyForTuition = async (
+  id: string,
+  token: string,
+  details?: ApplicationDetails
+) => {
   const res = await fetch(
     `${BASE_URL}/tuitions/${encodeURIComponent(id)}/apply`,
     {
       method: "POST",
       headers: authHeaders(token),
+      body: JSON.stringify(details ?? {}),
     }
   )
 

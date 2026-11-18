@@ -23,6 +23,7 @@ import {
   Home,
   Image as ImageIcon,
   Laptop,
+  Loader2,
   MapPin,
   Sparkles,
   Trash2,
@@ -181,6 +182,8 @@ export function PostTuitionForm() {
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [isDragging, setIsDragging] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState("")
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const previewRef = useRef<string | null>(null)
@@ -232,24 +235,38 @@ export function PostTuitionForm() {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
-    const { data: session, error } = await authClient.getSession()
-    const token = session?.session.token
+    setIsSubmitting(true)
+    setSubmitError("")
 
-    if (error || !token) {
-      console.error("Unable to retrieve authentication token", error)
-      return
+    try {
+      const { data: session, error } = await authClient.getSession()
+      const token = session?.session.token
+
+      if (error || !token) {
+        throw new Error("Please sign in again to post a tuition.")
+      }
+
+      await createTuition(
+        {
+          ...values,
+          monthlyFee: Number(values.monthlyFee),
+          daysPerWeek: Number(values.daysPerWeek),
+          bannerImage: imageFile?.name ?? "",
+        },
+        token
+      )
+
+      router.push("/dashboard/tutor/my-tuitions")
+      router.refresh()
+    } catch (submitFailure) {
+      setSubmitError(
+        submitFailure instanceof Error
+          ? submitFailure.message
+          : "Could not post this tuition. Please try again."
+      )
+    } finally {
+      setIsSubmitting(false)
     }
-
-    const result = await createTuition(
-      {
-        ...values,
-        monthlyFee: Number(values.monthlyFee),
-        daysPerWeek: Number(values.daysPerWeek),
-        bannerImage: imageFile?.name ?? "",
-      },
-      token
-    )
-    console.log(result)
   }
 
   return (
@@ -574,13 +591,20 @@ export function PostTuitionForm() {
         </div>
 
         <div className="flex flex-col-reverse gap-3 border-t border-white/10 bg-neutral-950/40 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-7">
-          <p className="text-xs text-neutral-500">
-            New posts stay pending until an admin reviews and approves them.
-          </p>
+          {submitError ? (
+            <p role="alert" className="text-xs text-rose-400">
+              {submitError}
+            </p>
+          ) : (
+            <p className="text-xs text-neutral-500">
+              New posts stay pending until an admin reviews and approves them.
+            </p>
+          )}
           <div className="flex flex-col gap-3 sm:flex-row">
             <Button
               type="button"
               variant="outline"
+              disabled={isSubmitting}
               onClick={() => router.push("/dashboard/tutor/my-tuitions")}
               className="h-11 rounded-xl border-white/15 bg-transparent px-5 text-sm font-semibold text-neutral-300 hover:bg-white/5 hover:text-white"
             >
@@ -589,10 +613,15 @@ export function PostTuitionForm() {
             </Button>
             <Button
               type="submit"
+              disabled={isSubmitting}
               className="h-11 rounded-xl border-transparent bg-lime-400 px-6 text-sm font-bold text-neutral-950 shadow-lg shadow-lime-400/20 hover:bg-lime-300 hover:shadow-xl hover:shadow-lime-400/30"
             >
-              <CheckCircle2 className="size-4" aria-hidden="true" />
-              Submit
+              {isSubmitting ? (
+                <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+              ) : (
+                <CheckCircle2 className="size-4" aria-hidden="true" />
+              )}
+              {isSubmitting ? "Submitting..." : "Submit"}
             </Button>
           </div>
         </div>

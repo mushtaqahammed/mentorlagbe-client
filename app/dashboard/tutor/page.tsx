@@ -1,10 +1,9 @@
-import { DashboardPage } from "@/components/dashboard/dashboard-page"
+import { TutorDashboard } from "@/components/tutor/tutor-dashboard"
+
+export const metadata = {
+  title: "Tutor Overview | MentorLagbe",
+}
 
 export default function TutorDashboardPage() {
-  return (
-    <DashboardPage
-      title="Tutor Overview"
-      description="Manage your tuition posts, review applicants, and keep your profile up to date."
-    />
-  )
+  return <TutorDashboard />
 }

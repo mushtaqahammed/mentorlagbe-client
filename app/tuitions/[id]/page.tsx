@@ -1,6 +1,10 @@
 "use client"
 
-import React, { type Dispatch, type SetStateAction } from "react"
+import React, {
+  type Dispatch,
+  type FormEvent,
+  type SetStateAction,
+} from "react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
 import {
@@ -23,6 +27,7 @@ import {
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ToastViewport, type ToastItem } from "@/components/ui/toast"
 import { applyForTuition } from "@/lib/actions/tuition"
@@ -174,6 +179,12 @@ export default function TuitionDetailPage() {
   const [toasts, setToasts] = React.useState<ToastItem[]>([])
   const [submitting, setSubmitting] = React.useState(false)
   const [applied, setApplied] = React.useState(false)
+  const [showApplyForm, setShowApplyForm] = React.useState(false)
+  const [applicationDetails, setApplicationDetails] = React.useState({
+    phone: "",
+    preferredSchedule: "",
+    note: "",
+  })
 
   React.useEffect(() => {
     async function loadTuition() {
@@ -211,8 +222,33 @@ export default function TuitionDetailPage() {
     if (id) loadTuition()
   }, [id, refreshKey])
 
-  async function handleApply() {
+  function openApplyForm() {
+    if (!submitting && !applied) setShowApplyForm(true)
+  }
+
+  function updateApplicationField(
+    field: keyof typeof applicationDetails,
+    value: string
+  ) {
+    setApplicationDetails((current) => ({ ...current, [field]: value }))
+  }
+
+  async function handleApply(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
     if (!id || submitting || applied) return
+
+    const phone = applicationDetails.phone.trim()
+    const preferredSchedule = applicationDetails.preferredSchedule.trim()
+
+    if (!phone || !preferredSchedule) {
+      notify(
+        setToasts,
+        "error",
+        "Missing details",
+        "Add your phone number and preferred schedule before applying."
+      )
+      return
+    }
 
     setSubmitting(true)
 
@@ -228,8 +264,14 @@ export default function TuitionDetailPage() {
         throw new Error("Only student accounts can apply for tuitions.")
       }
 
-      await applyForTuition(id, session.session.token)
+      await applyForTuition(id, session.session.token, {
+        phone,
+        preferredSchedule,
+        note: applicationDetails.note.trim(),
+      })
+
       setApplied(true)
+      setShowApplyForm(false)
       notify(
         setToasts,
         "success",
@@ -244,6 +286,7 @@ export default function TuitionDetailPage() {
 
       if (message.toLowerCase().includes("already applied")) {
         setApplied(true)
+        setShowApplyForm(false)
       }
 
       notify(setToasts, "error", "Application not submitted", message)
@@ -411,7 +454,7 @@ export default function TuitionDetailPage() {
 
                     <Button
                       type="button"
-                      onClick={handleApply}
+                      onClick={openApplyForm}
                       disabled={submitting || applied}
                       className={cn(
                         "mt-6 h-12 w-full gap-2 rounded-xl bg-lime-400 text-sm font-bold text-neutral-950 transition-colors hover:bg-lime-300",
@@ -447,6 +490,124 @@ export default function TuitionDetailPage() {
           )}
         </div>
       </div>
+
+      {showApplyForm ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+          onClick={() => {
+            if (!submitting) setShowApplyForm(false)
+          }}
+        >
+          <form
+            onSubmit={handleApply}
+            onClick={(event) => event.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="apply-dialog-title"
+            className="w-full max-w-md rounded-2xl border border-neutral-200 bg-white p-6 shadow-2xl"
+          >
+            <h2
+              id="apply-dialog-title"
+              className="text-lg font-bold text-neutral-900"
+            >
+              Apply for this tuition
+            </h2>
+            <p className="mt-1.5 text-sm text-neutral-500">
+              Share a few details so the tutor can review your request.
+            </p>
+
+            <div className="mt-5 space-y-4">
+              <div>
+                <label
+                  htmlFor="apply-phone"
+                  className="text-xs font-semibold text-neutral-700"
+                >
+                  Phone number
+                </label>
+                <Input
+                  id="apply-phone"
+                  value={applicationDetails.phone}
+                  onChange={(event) =>
+                    updateApplicationField("phone", event.target.value)
+                  }
+                  placeholder="e.g. 01712345678"
+                  maxLength={40}
+                  required
+                  className="mt-2 h-11 w-full rounded-xl border-neutral-200 bg-white px-3 text-sm text-neutral-900 placeholder:text-neutral-400 focus-visible:border-lime-500 focus-visible:ring-lime-500/20"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="apply-schedule"
+                  className="text-xs font-semibold text-neutral-700"
+                >
+                  Preferred schedule
+                </label>
+                <Input
+                  id="apply-schedule"
+                  value={applicationDetails.preferredSchedule}
+                  onChange={(event) =>
+                    updateApplicationField(
+                      "preferredSchedule",
+                      event.target.value
+                    )
+                  }
+                  placeholder="e.g. Weekdays, 5:00 PM - 6:00 PM"
+                  maxLength={120}
+                  required
+                  className="mt-2 h-11 w-full rounded-xl border-neutral-200 bg-white px-3 text-sm text-neutral-900 placeholder:text-neutral-400 focus-visible:border-lime-500 focus-visible:ring-lime-500/20"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="apply-note"
+                  className="text-xs font-semibold text-neutral-700"
+                >
+                  Application note{" "}
+                  <span className="font-normal text-neutral-400">
+                    (optional)
+                  </span>
+                </label>
+                <textarea
+                  id="apply-note"
+                  value={applicationDetails.note}
+                  onChange={(event) =>
+                    updateApplicationField("note", event.target.value)
+                  }
+                  rows={4}
+                  maxLength={1000}
+                  placeholder="Tell the tutor why you are interested..."
+                  className="mt-2 w-full resize-none rounded-xl border border-neutral-200 bg-white px-3 py-2.5 text-sm text-neutral-900 shadow-sm outline-none placeholder:text-neutral-400 focus-visible:border-lime-500 focus-visible:ring-4 focus-visible:ring-lime-500/20"
+                />
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowApplyForm(false)}
+                disabled={submitting}
+                className="h-10 rounded-xl border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-600 hover:bg-neutral-50"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={submitting}
+                className="h-10 gap-2 rounded-xl bg-lime-400 px-4 text-sm font-bold text-neutral-950 hover:bg-lime-300"
+              >
+                {submitting ? (
+                  <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                ) : null}
+                {submitting ? "Submitting..." : "Submit application"}
+              </Button>
+            </div>
+          </form>
+        </div>
+      ) : null}
     </main>
   )
 }
