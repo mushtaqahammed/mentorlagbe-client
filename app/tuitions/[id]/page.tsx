@@ -53,7 +53,7 @@ type Tuition = {
 type SetToasts = Dispatch<SetStateAction<ToastItem[]>>
 
 const cardClasses =
-  "rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-6"
+  "rounded-[1.5rem] border border-neutral-200/80 bg-white p-6 shadow-sm"
 
 function notify(
   setToasts: SetToasts,
@@ -309,7 +309,7 @@ export default function TuitionDetailPage() {
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <Link
           href="/tuitions"
-          className="inline-flex items-center gap-2 text-sm font-semibold text-neutral-600 transition-colors hover:text-neutral-900"
+          className="inline-flex items-center gap-2 rounded-md text-sm font-semibold text-neutral-600 transition-colors hover:text-lime-700 focus-visible:ring-4 focus-visible:ring-lime-400/30 focus-visible:outline-none"
         >
           <ArrowLeft className="size-4" aria-hidden="true" />
           Back to all tuitions
@@ -319,7 +319,7 @@ export default function TuitionDetailPage() {
           {loading ? (
             <DetailSkeleton />
           ) : error || !tuition ? (
-            <div className="rounded-2xl border border-neutral-200 bg-white p-10 text-center shadow-sm">
+            <div className="rounded-[2rem] border border-neutral-200 bg-white p-10 text-center shadow-sm sm:p-14">
               <AlertCircle
                 className="mx-auto size-9 text-rose-500"
                 aria-hidden="true"
@@ -335,14 +335,14 @@ export default function TuitionDetailPage() {
                   type="button"
                   variant="outline"
                   onClick={() => setRefreshKey((current) => current + 1)}
-                  className="h-10 gap-2 rounded-xl border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 hover:bg-neutral-50"
+                  className="h-11 gap-2 rounded-full border-neutral-200 bg-white px-5 text-sm font-semibold text-neutral-700 hover:border-lime-300 hover:bg-lime-50 hover:text-lime-700"
                 >
                   <RefreshCw className="size-4" aria-hidden="true" />
                   Try again
                 </Button>
                 <Link
                   href="/tuitions"
-                  className="inline-flex h-10 items-center justify-center rounded-xl bg-lime-400 px-4 text-sm font-bold text-neutral-950 transition-colors hover:bg-lime-300"
+                  className="inline-flex h-11 items-center justify-center rounded-full bg-lime-400 px-6 text-sm font-semibold text-neutral-950 shadow-lg shadow-lime-400/20 transition-all hover:-translate-y-0.5 hover:bg-lime-300"
                 >
                   Browse tuitions
                 </Link>
@@ -350,9 +350,16 @@ export default function TuitionDetailPage() {
             </div>
           ) : (
             <>
-              <section className="rounded-2xl bg-neutral-900 p-6 text-white shadow-lg shadow-black/10 sm:p-8">
+              <section className="relative isolate overflow-hidden rounded-[2rem] bg-neutral-950 p-6 text-white shadow-lg shadow-black/10 sm:p-8">
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-0 -z-10"
+                >
+                  <div className="absolute -top-32 -left-16 size-80 rounded-full bg-lime-400/10 blur-[120px]" />
+                  <div className="absolute -right-20 -bottom-32 size-72 rounded-full bg-sky-400/10 blur-[110px]" />
+                </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-lime-400/25 bg-lime-400/10 px-3 py-1 text-xs font-semibold text-lime-300">
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-lime-300 backdrop-blur-sm">
                     <BookOpen className="size-3.5" aria-hidden="true" />
                     {tuition.subject || "Subject not set"}
                   </span>
@@ -360,7 +367,7 @@ export default function TuitionDetailPage() {
                   <StatusBadge value={tuition.status} />
                 </div>
 
-                <h1 className="mt-5 text-2xl font-bold tracking-tight sm:text-3xl">
+                <h1 className="mt-5 text-3xl font-bold tracking-tight sm:text-4xl">
                   {tuition.title || "Untitled tuition"}
                 </h1>
                 <p className="mt-3 max-w-3xl text-sm text-neutral-300">
@@ -374,7 +381,7 @@ export default function TuitionDetailPage() {
               <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
                 <div className="space-y-6">
                   <section className={cardClasses}>
-                    <h2 className="text-lg font-semibold text-neutral-900">
+                    <h2 className="text-lg font-bold tracking-tight text-neutral-950">
                       Tuition details
                     </h2>
                     <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -412,7 +419,7 @@ export default function TuitionDetailPage() {
                   </section>
 
                   <section className={cardClasses}>
-                    <h2 className="text-lg font-semibold text-neutral-900">
+                    <h2 className="text-lg font-bold tracking-tight text-neutral-950">
                       Description
                     </h2>
                     <p className="mt-4 text-sm leading-7 whitespace-pre-line text-neutral-600">
@@ -421,7 +428,7 @@ export default function TuitionDetailPage() {
                   </section>
 
                   <section className={cardClasses}>
-                    <h2 className="text-lg font-semibold text-neutral-900">
+                    <h2 className="text-lg font-bold tracking-tight text-neutral-950">
                       About the tutor
                     </h2>
                     <div className="mt-4 flex items-center gap-3">
@@ -441,8 +448,8 @@ export default function TuitionDetailPage() {
                 </div>
 
                 <aside className="lg:sticky lg:top-6 lg:self-start">
-                  <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
-                    <p className="text-xs font-medium tracking-wide text-neutral-500 uppercase">
+                  <div className="rounded-[1.5rem] border border-neutral-200/80 bg-white p-6 shadow-sm">
+                    <p className="text-xs font-semibold tracking-widest text-lime-700 uppercase">
                       Monthly fee
                     </p>
                     <p className="mt-2 text-3xl font-bold text-neutral-900">
@@ -457,8 +464,9 @@ export default function TuitionDetailPage() {
                       onClick={openApplyForm}
                       disabled={submitting || applied}
                       className={cn(
-                        "mt-6 h-12 w-full gap-2 rounded-xl bg-lime-400 text-sm font-bold text-neutral-950 transition-colors hover:bg-lime-300",
-                        applied && "bg-emerald-500 hover:bg-emerald-500"
+                        "mt-6 h-12 w-full gap-2 rounded-full bg-lime-400 px-6 text-sm font-semibold text-neutral-950 shadow-lg shadow-lime-400/20 transition-all hover:-translate-y-0.5 hover:bg-lime-300",
+                        applied &&
+                          "bg-emerald-500 shadow-emerald-500/20 hover:bg-emerald-500"
                       )}
                     >
                       {submitting ? (
@@ -504,7 +512,7 @@ export default function TuitionDetailPage() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="apply-dialog-title"
-            className="w-full max-w-md rounded-2xl border border-neutral-200 bg-white p-6 shadow-2xl"
+            className="w-full max-w-md rounded-[1.5rem] border border-neutral-200 bg-white p-6 shadow-2xl"
           >
             <h2
               id="apply-dialog-title"
@@ -590,14 +598,14 @@ export default function TuitionDetailPage() {
                 variant="outline"
                 onClick={() => setShowApplyForm(false)}
                 disabled={submitting}
-                className="h-10 rounded-xl border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-600 hover:bg-neutral-50"
+                className="h-11 rounded-full border-neutral-200 bg-white px-5 text-sm font-semibold text-neutral-600 hover:bg-neutral-50"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 disabled={submitting}
-                className="h-10 gap-2 rounded-xl bg-lime-400 px-4 text-sm font-bold text-neutral-950 hover:bg-lime-300"
+                className="h-11 gap-2 rounded-full bg-lime-400 px-5 text-sm font-semibold text-neutral-950 shadow-lg shadow-lime-400/20 transition-all hover:-translate-y-0.5 hover:bg-lime-300"
               >
                 {submitting ? (
                   <Loader2 className="size-4 animate-spin" aria-hidden="true" />

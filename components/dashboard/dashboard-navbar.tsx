@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { ArrowLeft } from "lucide-react"
 
 import { ProfileDropdown } from "@/components/dashboard/profile-dropdown"
 import { RoleBadge } from "@/components/dashboard/role-badge"
@@ -31,6 +32,17 @@ export function DashboardNavbar() {
       </div>
 
       <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+        <Link
+          href="/"
+          aria-label="Back to Home"
+          title="Back to Home"
+          className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3 text-xs font-semibold text-neutral-200 transition-colors hover:border-lime-400/50 hover:bg-lime-400/10 hover:text-lime-300 focus-visible:ring-2 focus-visible:ring-lime-400/60 focus-visible:outline-none sm:gap-2 sm:px-4 sm:text-sm"
+        >
+          <ArrowLeft className="size-4 shrink-0" aria-hidden="true" />
+          <span className="sm:hidden">Home</span>
+          <span className="hidden sm:inline">Back to Home</span>
+        </Link>
+
         {isPending ? (
           <div className="flex items-center gap-2">
             <span className="size-8 animate-pulse rounded-full bg-neutral-700" />
