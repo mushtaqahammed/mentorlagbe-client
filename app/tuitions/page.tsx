@@ -1,8 +1,10 @@
 "use client"
 
 import React from "react"
+import Link from "next/link"
 import {
   AlertCircle,
+  ArrowRight,
   BookOpen,
   CalendarDays,
   CheckCircle2,
@@ -35,7 +37,6 @@ type Tuition = {
   monthlyFee: number
   daysPerWeek: number
   description: string
-  approvalStatus?: string
   status?: string
   createdAt: string
   tutorName?: string
@@ -59,26 +60,6 @@ function formatDate(value: string) {
 
 function formatFee(value: number) {
   return `৳ ${Number(value || 0).toLocaleString("en-BD")}`
-}
-
-function ApprovalBadge({ value }: { value?: string }) {
-  const approved = value?.toLowerCase() === "approved"
-  const rejected = value?.toLowerCase() === "rejected"
-  const Icon = approved ? CheckCircle2 : rejected ? XCircle : Clock3
-
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold",
-        approved && "border-emerald-200 bg-emerald-50 text-emerald-700",
-        rejected && "border-rose-200 bg-rose-50 text-rose-700",
-        !approved && !rejected && "border-amber-200 bg-amber-50 text-amber-700"
-      )}
-    >
-      <Icon className="size-3.5" aria-hidden="true" />
-      {approved ? "Approved" : rejected ? "Rejected" : "Pending"}
-    </span>
-  )
 }
 
 function StatusBadge({ value }: { value?: string }) {
@@ -328,96 +309,105 @@ export default function TuitionsPage() {
           ) : (
             <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
               {filteredTuitions.map((tuition) => (
-                <article key={tuition.id} className={cardClasses}>
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <h2 className="truncate text-base font-semibold text-neutral-900">
-                        {tuition.title || "Untitled tuition"}
-                      </h2>
-                      <p className="mt-1 text-xs font-semibold text-lime-700">
-                        {tuition.subject || "Subject not set"}
-                      </p>
-                    </div>
-                    <div className="flex shrink-0 flex-col items-end gap-1.5">
-                      <ApprovalBadge value={tuition.approvalStatus} />
+                <Link
+                  key={tuition.id}
+                  href={`/tuitions/${tuition.id}`}
+                  className={cn(cardClasses, "block")}
+                >
+                  <article>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <h2 className="truncate text-base font-semibold text-neutral-900">
+                          {tuition.title || "Untitled tuition"}
+                        </h2>
+                        <p className="mt-1 text-xs font-semibold text-lime-700">
+                          {tuition.subject || "Subject not set"}
+                        </p>
+                      </div>
                       <StatusBadge value={tuition.status} />
                     </div>
-                  </div>
 
-                  <div className="mt-5 grid grid-cols-2 gap-3">
-                    <div className="flex items-center gap-2 rounded-xl border border-neutral-100 bg-neutral-50 px-3 py-2">
-                      <GraduationCap
-                        className="size-4 shrink-0 text-neutral-400"
-                        aria-hidden="true"
-                      />
-                      <span className="min-w-0 truncate text-xs text-neutral-700">
-                        {tuition.classLevel || "—"}
-                      </span>
+                    <div className="mt-5 grid grid-cols-2 gap-3">
+                      <div className="flex items-center gap-2 rounded-xl border border-neutral-100 bg-neutral-50 px-3 py-2">
+                        <GraduationCap
+                          className="size-4 shrink-0 text-neutral-400"
+                          aria-hidden="true"
+                        />
+                        <span className="min-w-0 truncate text-xs text-neutral-700">
+                          {tuition.classLevel || "—"}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 rounded-xl border border-neutral-100 bg-neutral-50 px-3 py-2">
+                        <span className="shrink-0 text-neutral-400">
+                          <ModeIcon mode={tuition.mode} />
+                        </span>
+                        <span className="min-w-0 truncate text-xs text-neutral-700">
+                          {tuition.mode || "—"}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 rounded-xl border border-neutral-100 bg-neutral-50 px-3 py-2">
+                        <MapPin
+                          className="size-4 shrink-0 text-neutral-400"
+                          aria-hidden="true"
+                        />
+                        <span className="min-w-0 truncate text-xs text-neutral-700">
+                          {tuition.location || "—"}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 rounded-xl border border-neutral-100 bg-neutral-50 px-3 py-2">
+                        <Wallet
+                          className="size-4 shrink-0 text-neutral-400"
+                          aria-hidden="true"
+                        />
+                        <span className="min-w-0 truncate text-xs text-neutral-700">
+                          {formatFee(tuition.monthlyFee)}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 rounded-xl border border-neutral-100 bg-neutral-50 px-3 py-2">
+                        <CalendarDays
+                          className="size-4 shrink-0 text-neutral-400"
+                          aria-hidden="true"
+                        />
+                        <span className="min-w-0 truncate text-xs text-neutral-700">
+                          {tuition.daysPerWeek || 0} days/week
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 rounded-xl border border-neutral-100 bg-neutral-50 px-3 py-2">
+                        <Clock3
+                          className="size-4 shrink-0 text-neutral-400"
+                          aria-hidden="true"
+                        />
+                        <span className="min-w-0 truncate text-xs text-neutral-700">
+                          {formatDate(tuition.createdAt)}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 rounded-xl border border-neutral-100 bg-neutral-50 px-3 py-2">
-                      <span className="shrink-0 text-neutral-400">
-                        <ModeIcon mode={tuition.mode} />
-                      </span>
-                      <span className="min-w-0 truncate text-xs text-neutral-700">
-                        {tuition.mode || "—"}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 rounded-xl border border-neutral-100 bg-neutral-50 px-3 py-2">
-                      <MapPin
-                        className="size-4 shrink-0 text-neutral-400"
-                        aria-hidden="true"
-                      />
-                      <span className="min-w-0 truncate text-xs text-neutral-700">
-                        {tuition.location || "—"}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 rounded-xl border border-neutral-100 bg-neutral-50 px-3 py-2">
-                      <Wallet
-                        className="size-4 shrink-0 text-neutral-400"
-                        aria-hidden="true"
-                      />
-                      <span className="min-w-0 truncate text-xs text-neutral-700">
-                        {formatFee(tuition.monthlyFee)}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 rounded-xl border border-neutral-100 bg-neutral-50 px-3 py-2">
-                      <CalendarDays
-                        className="size-4 shrink-0 text-neutral-400"
-                        aria-hidden="true"
-                      />
-                      <span className="min-w-0 truncate text-xs text-neutral-700">
-                        {tuition.daysPerWeek || 0} days/week
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 rounded-xl border border-neutral-100 bg-neutral-50 px-3 py-2">
-                      <Clock3
-                        className="size-4 shrink-0 text-neutral-400"
-                        aria-hidden="true"
-                      />
-                      <span className="min-w-0 truncate text-xs text-neutral-700">
-                        {formatDate(tuition.createdAt)}
-                      </span>
-                    </div>
-                  </div>
 
-                  <p className="mt-4 line-clamp-2 text-xs leading-relaxed text-neutral-500">
-                    {tuition.description || "No description provided."}
-                  </p>
+                    <p className="mt-4 line-clamp-2 text-xs leading-relaxed text-neutral-500">
+                      {tuition.description || "No description provided."}
+                    </p>
 
-                  <div className="mt-5 flex items-center justify-between gap-3 border-t border-neutral-100 pt-4">
-                    <div className="flex min-w-0 items-center gap-2">
-                      <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-neutral-900 text-white">
-                        <UserRound className="size-3.5" aria-hidden="true" />
-                      </span>
-                      <span className="min-w-0 truncate text-xs font-medium text-neutral-700">
-                        {tuition.tutorName || "Tutor"}
-                      </span>
+                    <div className="mt-5 flex items-center justify-between gap-3 border-t border-neutral-100 pt-4">
+                      <div className="flex min-w-0 items-center gap-2">
+                        <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-neutral-900 text-white">
+                          <UserRound className="size-3.5" aria-hidden="true" />
+                        </span>
+                        <span className="min-w-0 truncate text-xs font-medium text-neutral-700">
+                          {tuition.tutorName || "Tutor"}
+                        </span>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-3">
+                        <span className="text-[11px] text-neutral-400">
+                          Posted {formatDate(tuition.createdAt)}
+                        </span>
+                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-lime-700">
+                          View details
+                          <ArrowRight className="size-3.5" aria-hidden="true" />
+                        </span>
+                      </div>
                     </div>
-                    <span className="shrink-0 text-[11px] text-neutral-400">
-                      Posted {formatDate(tuition.createdAt)}
-                    </span>
-                  </div>
-                </article>
+                  </article>
+                </Link>
               ))}
             </div>
           )}

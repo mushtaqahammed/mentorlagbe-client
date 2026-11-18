@@ -131,3 +131,20 @@ export const deleteTuition = async (id: string, token: string) => {
   if (!res.ok) throw new Error("Could not delete this tuition.")
   return res.json()
 }
+
+export const applyForTuition = async (id: string, token: string) => {
+  const res = await fetch(
+    `${BASE_URL}/tuitions/${encodeURIComponent(id)}/apply`,
+    {
+      method: "POST",
+      headers: authHeaders(token),
+    }
+  )
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => null)
+    throw new Error(data?.error || "Could not submit your application.")
+  }
+
+  return res.json()
+}
