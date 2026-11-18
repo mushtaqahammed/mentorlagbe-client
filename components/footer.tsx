@@ -67,35 +67,37 @@ function FooterColumn({
 }) {
   return (
     <div className="flex flex-col gap-5">
-      <h3 className="text-sm font-semibold text-white">{title}</h3>
+      <h3 className="text-xs font-semibold tracking-widest text-neutral-500 uppercase">
+        {title}
+      </h3>
       {children}
     </div>
   )
 }
 
 const footerLink =
-  "text-sm text-neutral-400 transition-colors hover:text-lime-400"
+  "w-fit text-sm text-neutral-400 transition-colors hover:text-lime-400"
 
 export function Footer() {
   return (
     <footer className="relative overflow-hidden border-t border-white/10 bg-neutral-950">
-      {/* Soft lime glow, matching the auth pages' brand panels */}
-      <div className="pointer-events-none absolute -top-40 left-1/2 size-120 -translate-x-1/2 rounded-full bg-lime-400/10 blur-[120px]" />
+      {/* Soft lime glow from the top, matching the auth brand panels */}
+      <div className="pointer-events-none absolute -top-44 left-1/2 size-130 -translate-x-1/2 rounded-full bg-lime-400/10 blur-[130px]" />
 
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        {/* CTA banner — keeps the lime accent from the site's identity */}
-        <div className="mt-6 flex flex-col gap-6 rounded-[2rem] bg-lime-400 p-8 text-neutral-950 sm:flex-row sm:items-center sm:justify-between sm:p-10">
+        {/* CTA banner */}
+        <div className="mt-6 flex flex-col gap-6 rounded-[2rem] bg-lime-400 p-8 text-neutral-950 ring-1 ring-lime-300/50 sm:flex-row sm:items-center sm:justify-between sm:p-10">
           <div>
             <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
               Ready to find the right mentor?
             </h2>
-            <p className="mt-1.5 text-sm text-neutral-800">
+            <p className="mt-1.5 max-w-md text-sm text-neutral-800">
               Join MentorLagbe for free and connect with verified tutors today.
             </p>
           </div>
           <Link
             href="/sign-up"
-            className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-neutral-950 px-6 text-sm font-semibold text-white transition-colors hover:bg-neutral-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-neutral-950/30"
+            className="group inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-neutral-950 px-6 text-sm font-semibold text-white transition-all hover:bg-neutral-800 hover:shadow-lg hover:shadow-neutral-950/30 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-neutral-950/30"
           >
             Get Started
             <svg
@@ -105,7 +107,7 @@ export function Footer() {
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
-              className="size-4"
+              className="size-4 transition-transform group-hover:translate-x-0.5"
               aria-hidden="true"
             >
               <path d="M5 12h14m-6-6 6 6-6 6" />
@@ -114,12 +116,12 @@ export function Footer() {
         </div>
 
         {/* Main grid */}
-        <div className="grid gap-12 py-14 sm:grid-cols-2 lg:grid-cols-[1.6fr_1fr_1.2fr_1fr]">
+        <div className="grid gap-12 py-16 sm:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1.3fr_1fr]">
           {/* Brand block: logo, tagline, social links */}
-          <div className="flex flex-col gap-5 sm:col-span-2 lg:col-span-1">
+          <div className="flex flex-col items-start gap-6 sm:col-span-2 lg:col-span-1">
             <div className="flex items-center gap-2.5">
-              <LogoMark className="size-8 shrink-0 -rotate-6" />
-              <span className="text-xl font-bold tracking-tight text-white">
+              <LogoMark className="size-9 shrink-0 -rotate-6" />
+              <span className="text-2xl font-bold tracking-tight text-white">
                 MentorLagbe
               </span>
             </div>
@@ -138,7 +140,7 @@ export function Footer() {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={social.label}
-                  className="flex size-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-neutral-300 transition-colors hover:border-lime-400 hover:bg-lime-400 hover:text-neutral-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime-400/60"
+                  className="flex size-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-neutral-300 transition-all hover:-translate-y-0.5 hover:border-lime-400 hover:bg-lime-400 hover:text-neutral-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime-400/60"
                 >
                   <svg
                     viewBox="0 0 24 24"
@@ -166,10 +168,10 @@ export function Footer() {
           </FooterColumn>
 
           <FooterColumn title="Contact">
-            <ul className="flex flex-col gap-3">
+            <ul className="flex flex-col gap-3.5">
               {contactInfo.map((item) => (
-                <li key={item.label} className="flex items-center gap-2.5">
-                  <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-white/5 ring-1 ring-white/10">
+                <li key={item.label} className="flex items-center gap-3">
+                  <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-white/5 ring-1 ring-white/10">
                     <svg
                       viewBox="0 0 24 24"
                       fill="none"
@@ -214,12 +216,22 @@ export function Footer() {
         </div>
 
         {/* Bottom row */}
-        <div className="flex flex-col items-start justify-between gap-3 border-t border-white/10 py-6 text-sm text-neutral-500 sm:flex-row sm:items-center">
+        <div className="flex flex-col items-start justify-between gap-4 border-t border-white/10 py-6 text-sm text-neutral-500 sm:flex-row sm:items-center">
           <span>
             © {new Date().getFullYear()} MentorLagbe. All rights reserved.
           </span>
           <span className="font-medium text-neutral-400">
             Mentors · Learners · Growth
+          </span>
+        </div>
+
+        {/* Giant wordmark — signature element from the reference design */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none -mb-4 flex justify-center overflow-hidden select-none sm:-mb-7 lg:-mb-10"
+        >
+          <span className="bg-gradient-to-b from-white/10 to-white/[0.02] bg-clip-text text-[clamp(3.5rem,12vw,11rem)] leading-[0.85] font-black tracking-tighter text-transparent">
+            MentorLagbe
           </span>
         </div>
       </div>
