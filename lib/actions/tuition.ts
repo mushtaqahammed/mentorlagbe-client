@@ -45,3 +45,20 @@ export type PlanUsage = {
   remaining: number | null
   unlimited: boolean
 }
+
+const BASE_URL = process.env.BACKEND_API_URL || "http://localhost:5000"
+
+export const createTuition = async (
+  tuitionData: TuitionInput,
+  token: string
+) => {
+  const res = await fetch(`${BASE_URL}/tuitions`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(tuitionData),
+  })
+  return res.json()
+}

@@ -36,12 +36,14 @@ import { useRouter } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { authClient } from "@/lib/auth-client"
 import { cn } from "@/lib/utils"
 import {
   CLASS_LEVEL_OPTIONS,
   DAYS_PER_WEEK_OPTIONS,
   SUBJECT_OPTIONS,
-} from "@/lib/tuition"
+  createTuition,
+} from "@/lib/actions/tuition"
 
 type FormValues = {
   title: string
@@ -227,12 +229,27 @@ export function PostTuitionForm() {
     setValues((current) => ({ ...current, [field]: value }))
   }
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    console.log("Tuition form data:", {
-      ...values,
-      bannerImage: imageFile,
-    })
+
+    const { data: session, error } = await authClient.getSession()
+    const token = session?.session.token
+
+    if (error || !token) {
+      console.error("Unable to retrieve authentication token", error)
+      return
+    }
+
+    const result = await createTuition(
+      {
+        ...values,
+        monthlyFee: Number(values.monthlyFee),
+        daysPerWeek: Number(values.daysPerWeek),
+        bannerImage: imageFile?.name ?? "",
+      },
+      token
+    )
+    console.log(result)
   }
 
   return (
