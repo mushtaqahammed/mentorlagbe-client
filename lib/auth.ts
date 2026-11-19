@@ -27,6 +27,42 @@ export const auth = betterAuth({
         input: true,
         defaultValue: "Student",
       },
+      // Subscription fields are server-owned. They are written only after
+      // Stripe has confirmed a paid, active subscription.
+      plan: {
+        type: "string",
+        input: false,
+        defaultValue: "free",
+      },
+      subscriptionStatus: {
+        type: "string",
+        input: false,
+        defaultValue: "none",
+      },
+      proPlanId: {
+        type: "string",
+        input: false,
+      },
+      stripeSubscriptionId: {
+        type: "string",
+        input: false,
+      },
+      stripeCustomerId: {
+        type: "string",
+        input: false,
+      },
+      proActivatedAt: {
+        type: "string",
+        input: false,
+      },
+      subscriptionStartDate: {
+        type: "string",
+        input: false,
+      },
+      subscriptionEndDate: {
+        type: "string",
+        input: false,
+      },
     },
   },
 

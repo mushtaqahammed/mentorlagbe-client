@@ -7,7 +7,6 @@ import {
   useState,
   type ChangeEvent,
   type DragEvent,
-  type FormEvent,
   type ReactNode,
 } from "react"
 import {
@@ -33,11 +32,12 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react"
-import { redirect, useRouter } from "next/navigation"
+import { useRouter } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { authClient } from "@/lib/auth-client"
+import type { SubscriptionState } from "@/lib/subscription"
 import { cn } from "@/lib/utils"
 import {
   CLASS_LEVEL_OPTIONS,
@@ -46,7 +46,6 @@ import {
   createTuition,
   createTuitionCount,
 } from "@/lib/actions/tuition"
-import { error } from "console"
 
 type FormValues = {
   title: string
@@ -101,6 +100,17 @@ const controlClasses =
 const selectClasses = cn(controlClasses, "appearance-none pr-10")
 const labelClasses = "text-sm font-medium text-neutral-200"
 
+async function readSubscriptionState(): Promise<SubscriptionState | null> {
+  try {
+    const response = await fetch("/api/subscription/status", {
+      cache: "no-store",
+    })
+    return response.ok ? ((await response.json()) as SubscriptionState) : null
+  } catch {
+    return null
+  }
+}
+
 function Field({
   id,
   label,
@@ -144,34 +154,60 @@ function SelectChevron() {
   )
 }
 
-function PlanCard({ onUpgrade }: { onUpgrade: () => void }) {
+function PlanCard({
+  isPro,
+  onUpgrade,
+}: {
+  isPro: boolean
+  onUpgrade: () => void
+}) {
   return (
     <section className="relative overflow-hidden rounded-2xl border border-white/10 bg-neutral-900/70 p-5 shadow-lg shadow-black/10 sm:p-6">
       <div className="pointer-events-none absolute -top-16 -right-16 size-48 rounded-full bg-lime-400/10 blur-3xl" />
       <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
           <div className="flex items-center gap-2.5">
-            <span className="flex size-9 items-center justify-center rounded-xl bg-white/5 text-neutral-300 ring-1 ring-white/10">
-              <Sparkles className="size-4.5" aria-hidden="true" />
+            <span
+              className={cn(
+                "flex size-9 items-center justify-center rounded-xl ring-1",
+                isPro
+                  ? "bg-lime-400/10 text-lime-300 ring-lime-400/25"
+                  : "bg-white/5 text-neutral-300 ring-white/10"
+              )}
+            >
+              {isPro ? (
+                <Crown className="size-4.5" aria-hidden="true" />
+              ) : (
+                <Sparkles className="size-4.5" aria-hidden="true" />
+              )}
             </span>
             <h2 className="text-sm font-semibold tracking-tight text-white">
-              Free Plan
+              {isPro ? "Pro Plan" : "Free Plan"}
             </h2>
           </div>
           <p className="mt-3 text-sm text-neutral-400">
-            Share your tuition requirements with students.
+            {isPro
+              ? "Unlimited tuition posts are enabled on your account."
+              : "Share your tuition requirements with students."}
           </p>
         </div>
 
-        <Button
-          type="button"
-          onClick={onUpgrade}
-          className="h-10 shrink-0 gap-2 rounded-xl border-white/15 bg-white/5 px-4 text-sm font-semibold text-white hover:border-lime-400/40 hover:bg-lime-400/10 hover:text-lime-200"
-        >
-          <Crown className="size-4" aria-hidden="true" />
-          Upgrade to Pro
-          <ArrowRight className="size-4" aria-hidden="true" />
-        </Button>
+        {isPro ? (
+          <span className="inline-flex h-10 shrink-0 items-center gap-2 rounded-xl border border-lime-400/25 bg-lime-400/10 px-4 text-sm font-semibold text-lime-200">
+            <CheckCircle2 className="size-4" aria-hidden="true" />
+            Pro active
+          </span>
+        ) : (
+          <Button
+            type="button"
+            onClick={onUpgrade}
+            className="h-10 shrink-0 gap-2 rounded-xl border-white/15 bg-white/5 px-4 text-sm font-semibold text-white hover:border-lime-400/40 hover:bg-lime-400/10 hover:text-lime-200"
+          >
+            <Crown className="size-4" aria-hidden="true" />
+            Upgrade to Pro
+            <ArrowRight className="size-4" aria-hidden="true" />
+          </Button>
+        )}
       </div>
     </section>
   )
@@ -186,6 +222,9 @@ export function PostTuitionForm() {
   const [isDragging, setIsDragging] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState("")
+  const [subscription, setSubscription] = useState<SubscriptionState | null>(
+    null
+  )
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const previewRef = useRef<string | null>(null)
@@ -194,6 +233,27 @@ export function PostTuitionForm() {
     const preview = previewRef
     return () => {
       if (preview.current) URL.revokeObjectURL(preview.current)
+    }
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadSubscription() {
+      // Refresh the shared auth store too, so a just-upgraded tutor sees Pro
+      // across the navbar and dashboard without signing in again.
+      await authClient
+        .getSession({ query: { disableCookieCache: true } })
+        .catch(() => null)
+
+      const state = await readSubscriptionState()
+      if (!cancelled && state) setSubscription(state)
+    }
+
+    loadSubscription()
+
+    return () => {
+      cancelled = true
     }
   }, [])
 
@@ -234,49 +294,62 @@ export function PostTuitionForm() {
     setValues((current) => ({ ...current, [field]: value }))
   }
 
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
 
-const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-  event.preventDefault()
+    try {
+      setIsSubmitting(true)
+      setSubmitError("")
 
-  try {
-    setIsSubmitting(true)
+      const { data: session } = await authClient.getSession()
+      const token = session?.session.token
+      const tutorId = session?.user?.id
 
-    const { data: session } = await authClient.getSession()
-    const token = session?.session.token
-    const tutorId = session?.user?.id
+      if (!token || !tutorId) {
+        setSubmitError("Your session has expired. Please sign in again.")
+        return
+      }
 
-    if (!token || !tutorId) return
+      // Re-check the stored, Stripe-verified subscription on every submit so
+      // a newly upgraded Pro tutor is never blocked by the cached client
+      // session or by the Free Plan's 2-post limit.
+      const access = await readSubscriptionState()
+      if (access) setSubscription(access)
 
-    // Check existing tuition count first
-    const countRes = await createTuitionCount(`tutorId=${tutorId}`)
+      const countRes = await createTuitionCount(`tutorId=${tutorId}`)
 
-    // Free tutor can post maximum 2 tuitions
-    if (countRes.count >= 2) {
-      router.push("/pricing")
-      return
+      if (!access?.isPro && countRes.count >= 2) {
+        router.push("/pricing")
+        return
+      }
+
+      await createTuition(
+        {
+          ...values,
+          monthlyFee: Number(values.monthlyFee),
+          daysPerWeek: Number(values.daysPerWeek),
+          bannerImage: imageFile?.name ?? "",
+        },
+        token
+      )
+
+      router.push("/dashboard/tutor/my-tuitions")
+      router.refresh()
+    } catch (submitError) {
+      setSubmitError(
+        submitError instanceof Error
+          ? submitError.message
+          : "Could not post this tuition."
+      )
+    } finally {
+      setIsSubmitting(false)
     }
-
-    // Create tuition if limit is not reached
-    await createTuition(
-      {
-        ...values,
-        monthlyFee: Number(values.monthlyFee),
-        daysPerWeek: Number(values.daysPerWeek),
-        bannerImage: imageFile?.name ?? "",
-      },
-      token
-    )
-
-    router.push("/dashboard/tutor/my-tuitions")
-    router.refresh()
-  } finally {
-    setIsSubmitting(false)
   }
-}
 
   return (
     <div className="space-y-6">
       <PlanCard
+        isPro={subscription?.isPro ?? false}
         onUpgrade={() => router.push("/dashboard/profile#subscription")}
       />
 

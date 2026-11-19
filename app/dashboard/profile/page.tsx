@@ -1,6 +1,25 @@
-import { DashboardPage } from "@/components/dashboard/dashboard-page"
+import Link from "next/link"
+import { ArrowRight, CheckCircle2, Crown, Sparkles } from "lucide-react"
 
-export default function ProfilePage() {
+import { DashboardPage } from "@/components/dashboard/dashboard-page"
+import { getPlanById } from "@/lib/plans"
+import { getRequestSession } from "@/lib/session"
+import { getSubscriptionState } from "@/lib/subscription"
+
+export default async function ProfilePage() {
+  const session = await getRequestSession({ fresh: true })
+  const user = session?.user
+  const subscription = user ? await getSubscriptionState(user.id) : null
+  const isPro = subscription?.isPro ?? false
+  const proPlan = getPlanById(subscription?.planId ?? null)
+  const renewalDate = subscription?.currentPeriodEnd
+    ? new Date(subscription.currentPeriodEnd).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      })
+    : null
+
   return (
     <DashboardPage
       title="My Profile"
@@ -12,18 +31,107 @@ export default function ProfilePage() {
           className="rounded-xl border border-white/10 bg-neutral-950/60 p-5"
         >
           <h2 className="text-sm font-semibold text-white">Profile details</h2>
-          <p className="mt-1.5 text-sm text-neutral-400">
-            Your account information will appear here.
-          </p>
+          <dl className="mt-4 space-y-4 text-sm">
+            <div>
+              <dt className="text-xs font-medium tracking-wide text-neutral-500 uppercase">
+                Name
+              </dt>
+              <dd className="mt-1 font-medium text-neutral-100">
+                {user?.name || "—"}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs font-medium tracking-wide text-neutral-500 uppercase">
+                Email
+              </dt>
+              <dd className="mt-1 truncate font-medium text-neutral-100">
+                {user?.email || "—"}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs font-medium tracking-wide text-neutral-500 uppercase">
+                Account role
+              </dt>
+              <dd className="mt-1 font-medium text-neutral-100">
+                {user?.role || "—"}
+              </dd>
+            </div>
+          </dl>
         </section>
+
         <section
           id="subscription"
           className="rounded-xl border border-white/10 bg-neutral-950/60 p-5"
         >
-          <h2 className="text-sm font-semibold text-white">Subscription</h2>
-          <p className="mt-1.5 text-sm text-neutral-400">
-            Your current plan and billing details will appear here.
-          </p>
+          <div className="flex items-center gap-2">
+            {isPro ? (
+              <Crown className="size-4.5 text-lime-300" aria-hidden="true" />
+            ) : (
+              <Sparkles
+                className="size-4.5 text-neutral-400"
+                aria-hidden="true"
+              />
+            )}
+            <h2 className="text-sm font-semibold text-white">Subscription</h2>
+          </div>
+
+          <div className="mt-4 flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-4">
+            <div className="min-w-0">
+              <p className="text-[10px] font-semibold tracking-wider text-neutral-500 uppercase">
+                Current plan
+              </p>
+              <p className="mt-1 truncate text-lg font-bold text-white">
+                {isPro ? (proPlan?.name ?? "Pro Plan") : "Free Plan"}
+              </p>
+            </div>
+            <span
+              className={
+                isPro
+                  ? "shrink-0 rounded-full border border-lime-400/25 bg-lime-400/10 px-3 py-1 text-[11px] font-semibold text-lime-200"
+                  : "shrink-0 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold text-neutral-400"
+              }
+            >
+              {isPro ? "Active" : "Free"}
+            </span>
+          </div>
+
+          <ul className="mt-4 space-y-2 text-sm text-neutral-400">
+            <li className="flex items-center gap-2">
+              <CheckCircle2
+                className="size-4 shrink-0 text-lime-400"
+                aria-hidden="true"
+              />
+              {isPro ? "Unlimited tuition posts" : "Up to 2 tuition posts"}
+            </li>
+            <li className="flex items-center gap-2">
+              <CheckCircle2
+                className="size-4 shrink-0 text-lime-400"
+                aria-hidden="true"
+              />
+              {isPro
+                ? `Billed ${proPlan?.billingPeriod.toLowerCase() ?? "monthly"} via Stripe`
+                : "No payment required"}
+            </li>
+            {isPro && renewalDate ? (
+              <li className="flex items-center gap-2">
+                <CheckCircle2
+                  className="size-4 shrink-0 text-lime-400"
+                  aria-hidden="true"
+                />
+                Renews on {renewalDate}
+              </li>
+            ) : null}
+          </ul>
+
+          {isPro ? null : (
+            <Link
+              href="/pricing"
+              className="mt-5 inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-lime-400 px-4 text-sm font-bold text-neutral-950 shadow-lg shadow-lime-400/20 transition-all hover:-translate-y-0.5 hover:bg-lime-300"
+            >
+              Upgrade to Pro
+              <ArrowRight className="size-4" aria-hidden="true" />
+            </Link>
+          )}
         </section>
       </div>
     </DashboardPage>

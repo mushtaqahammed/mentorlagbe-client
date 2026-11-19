@@ -180,7 +180,7 @@ export function AdminDashboard() {
                 },
               ]}
             />
-            {/* <AdminStatsCard
+            <AdminStatsCard
               title="Total Stripe Revenue"
               value={revenue?.formatted ?? "—"}
               icon={Wallet}
@@ -190,7 +190,7 @@ export function AdminDashboard() {
                   ? `From successful Stripe subscription payments in ${revenue.currency}`
                   : "No successful subscription payments recorded yet"
               }
-            /> */}
+            />
           </>
         )}
       </div>

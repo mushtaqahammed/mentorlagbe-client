@@ -1,5 +1,6 @@
 import { headers } from "next/headers"
 import { auth } from "@/lib/auth"
+import { getSubscriptionState } from "@/lib/subscription"
 import { isPubliclyVisibleTuition } from "@/lib/tuitions/public"
 
 export const runtime = "nodejs"
@@ -13,7 +14,9 @@ async function getTutor() {
     headers: await headers(),
   })
 
-  if (!session?.user || session.user.role !== "tutor") {
+  const role = session?.user.role?.trim().toLowerCase()
+
+  if (!session?.user || role !== "tutor") {
     return null
   }
 
@@ -85,8 +88,14 @@ export async function POST(request: Request) {
   const tuition = await request.json()
 
   try {
+    const subscription = await getSubscriptionState(tutor.id)
+
     const response = await sendToBackend("/api/tuitions", {
-      tutor,
+      tutor: {
+        ...tutor,
+        plan: subscription.isPro ? "pro" : "free",
+        isPro: subscription.isPro,
+      },
       tuition,
     })
 

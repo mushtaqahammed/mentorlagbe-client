@@ -45,12 +45,7 @@ export const dashboardMenuByRole: Record<DashboardRole, DashboardMenuItem[]> = {
       href: "/dashboard/student/my-applications",
       icon: FileText,
     },
-    {
-      id: "subscription",
-      label: "My Subscription",
-      href: "/dashboard/profile",
-      icon: Crown,
-    },
+ 
     {
       id: "profile",
       label: "My Profile",
@@ -83,12 +78,7 @@ export const dashboardMenuByRole: Record<DashboardRole, DashboardMenuItem[]> = {
       href: "/dashboard/tutor/applicants",
       icon: Users,
     },
-    {
-      id: "subscription",
-      label: "My Subscription",
-      href: "/dashboard/profile",
-      icon: Crown,
-    },
+   
     {
       id: "profile",
       label: "My Profile",

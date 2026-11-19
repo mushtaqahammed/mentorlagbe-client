@@ -57,8 +57,15 @@ export const planList = [proPlans["pro-tutor"], proPlans["pro-student"]]
  * are intentionally ignored so a user cannot request another role's plan.
  */
 export function getPlanForRole(role?: string | null): ProPlan | null {
-  if (role === "Tutor") return proPlans["pro-tutor"]
-  if (role === "Student") return proPlans["pro-student"]
+  const normalized = role?.trim().toLowerCase()
+  if (normalized === "tutor") return proPlans["pro-tutor"]
+  if (normalized === "student") return proPlans["pro-student"]
+  return null
+}
+
+/** Looks up a plan by its id, used when verifying Stripe metadata. */
+export function getPlanById(id?: string | null): ProPlan | null {
+  if (id === "pro-tutor" || id === "pro-student") return proPlans[id]
   return null
 }
 
