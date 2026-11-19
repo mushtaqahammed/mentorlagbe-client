@@ -56,10 +56,10 @@ const heroHighlights = [
 ]
 
 const cardClasses =
-  "group relative block rounded-[1.5rem] border border-neutral-200/80 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-lime-300 hover:shadow-xl hover:shadow-neutral-950/5 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-lime-400/30 sm:p-6"
+  "group relative block rounded-[1.5rem] border border-white/10 bg-neutral-900/70 p-5 shadow-lg shadow-black/10 transition-all duration-300 hover:-translate-y-1 hover:border-lime-400/40 hover:bg-neutral-900 hover:shadow-xl hover:shadow-black/30 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-lime-400/30 sm:p-6"
 
 const skeletonCardClasses =
-  "rounded-[1.5rem] border border-neutral-200/80 bg-white p-5 shadow-sm sm:p-6"
+  "rounded-[1.5rem] border border-white/10 bg-neutral-900/70 p-5 shadow-lg shadow-black/10 sm:p-6"
 
 function formatDate(value: string) {
   const date = new Date(value)
@@ -95,8 +95,8 @@ function StatusBadge({ value }: { value?: string }) {
       className={cn(
         "inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold",
         active
-          ? "border-lime-200 bg-lime-50 text-lime-700"
-          : "border-neutral-200 bg-neutral-100 text-neutral-500"
+          ? "border-lime-400/30 bg-lime-400/10 text-lime-300"
+          : "border-white/10 bg-white/5 text-neutral-400"
       )}
     >
       <Icon className="size-3" aria-hidden="true" />
@@ -121,13 +121,13 @@ function InfoTile({
   value: string
 }) {
   return (
-    <div className="flex min-w-0 items-center gap-2.5 rounded-xl border border-neutral-100 bg-neutral-50 px-3 py-2.5">
-      <span className="shrink-0 text-neutral-400">{icon}</span>
+    <div className="flex min-w-0 items-center gap-2.5 rounded-xl border border-white/5 bg-white/[0.03] px-3 py-2.5">
+      <span className="shrink-0 text-neutral-500">{icon}</span>
       <span className="min-w-0">
-        <span className="block text-[10px] font-semibold tracking-wider text-neutral-400 uppercase">
+        <span className="block text-[10px] font-semibold tracking-wider text-neutral-500 uppercase">
           {label}
         </span>
-        <span className="block truncate text-sm font-medium text-neutral-800">
+        <span className="block truncate text-sm font-medium text-neutral-200">
           {value || "—"}
         </span>
       </span>
@@ -139,24 +139,24 @@ function TuitionSkeleton() {
   return (
     <div className={skeletonCardClasses} aria-hidden="true">
       <div className="flex items-start justify-between gap-3">
-        <Skeleton className="h-6 w-28 rounded-full bg-neutral-200" />
-        <Skeleton className="h-6 w-16 rounded-full bg-neutral-200" />
+        <Skeleton className="h-6 w-28 rounded-full bg-white/10" />
+        <Skeleton className="h-6 w-16 rounded-full bg-white/10" />
       </div>
-      <Skeleton className="mt-5 h-5 w-3/4 bg-neutral-200" />
-      <Skeleton className="mt-3 h-3 w-full bg-neutral-200" />
-      <Skeleton className="mt-2 h-3 w-2/3 bg-neutral-200" />
+      <Skeleton className="mt-5 h-5 w-3/4 bg-white/10" />
+      <Skeleton className="mt-3 h-3 w-full bg-white/10" />
+      <Skeleton className="mt-2 h-3 w-2/3 bg-white/10" />
       <div className="mt-5 grid grid-cols-2 gap-2.5">
         {[0, 1, 2, 3].map((item) => (
-          <Skeleton key={item} className="h-12 rounded-xl bg-neutral-200" />
+          <Skeleton key={item} className="h-12 rounded-xl bg-white/10" />
         ))}
       </div>
-      <Skeleton className="mt-4 h-14 rounded-xl bg-neutral-200" />
-      <div className="mt-5 flex items-center justify-between border-t border-neutral-100 pt-4">
+      <Skeleton className="mt-4 h-14 rounded-xl bg-white/10" />
+      <div className="mt-5 flex items-center justify-between border-t border-white/10 pt-4">
         <div className="flex items-center gap-2.5">
-          <Skeleton className="size-9 rounded-full bg-neutral-200" />
-          <Skeleton className="h-8 w-24 bg-neutral-200" />
+          <Skeleton className="size-9 rounded-full bg-white/10" />
+          <Skeleton className="h-8 w-24 bg-white/10" />
         </div>
-        <Skeleton className="size-9 rounded-full bg-neutral-200" />
+        <Skeleton className="size-9 rounded-full bg-white/10" />
       </div>
     </div>
   )
@@ -176,21 +176,21 @@ function StateCard({
   tone?: "lime" | "rose"
 }) {
   return (
-    <div className="rounded-[2rem] border border-neutral-200 bg-white px-6 py-14 text-center shadow-sm">
+    <div className="rounded-[2rem] border border-white/10 bg-neutral-900/70 px-6 py-14 text-center shadow-lg shadow-black/10">
       <span
         className={cn(
           "mx-auto flex size-16 items-center justify-center rounded-2xl ring-1",
           tone === "rose"
-            ? "bg-rose-50 text-rose-500 ring-rose-200"
-            : "bg-lime-50 text-lime-600 ring-lime-200"
+            ? "bg-rose-400/10 text-rose-300 ring-rose-400/25"
+            : "bg-lime-400/10 text-lime-300 ring-lime-400/25"
         )}
       >
         {icon}
       </span>
-      <h2 className="mt-5 text-xl font-bold tracking-tight text-neutral-950 sm:text-2xl">
+      <h2 className="mt-5 text-xl font-bold tracking-tight text-white sm:text-2xl">
         {title}
       </h2>
-      <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-neutral-500">
+      <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-neutral-400">
         {description}
       </p>
       {action ? <div className="mt-6">{action}</div> : null}
@@ -267,8 +267,8 @@ export default function TuitionsPage() {
   }
 
   return (
-    <main className="min-h-svh bg-neutral-50 text-neutral-900">
-      <section className="relative isolate overflow-hidden bg-neutral-950 text-white">
+    <main className="min-h-svh bg-neutral-950 text-white">
+      <section className="relative isolate overflow-hidden border-b border-white/10 bg-neutral-950 text-white">
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 -z-10"
@@ -311,14 +311,14 @@ export default function TuitionsPage() {
       </section>
 
       <div className="relative z-10 mx-auto -mt-6 max-w-7xl px-4 sm:px-6 lg:px-8">
-        <section className="rounded-2xl border border-neutral-200 bg-white p-4 shadow-lg shadow-neutral-950/5 sm:rounded-[1.5rem] sm:p-5">
+        <section className="rounded-2xl border border-white/10 bg-neutral-900/70 p-4 shadow-lg shadow-black/10 sm:rounded-[1.5rem] sm:p-5">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <div className="relative flex-1">
               <label htmlFor="tuition-search" className="sr-only">
                 Search tuitions
               </label>
               <Search
-                className="pointer-events-none absolute top-1/2 left-4 size-4.5 -translate-y-1/2 text-neutral-400"
+                className="pointer-events-none absolute top-1/2 left-4 size-4.5 -translate-y-1/2 text-neutral-500"
                 aria-hidden="true"
               />
               <Input
@@ -326,14 +326,14 @@ export default function TuitionsPage() {
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder="Search by title, subject, location, or tutor..."
-                className="h-12 rounded-xl border-neutral-200 bg-neutral-50 pr-11 pl-11 text-sm text-neutral-900 shadow-none outline-none placeholder:text-neutral-400 focus-visible:border-lime-400 focus-visible:bg-white focus-visible:ring-4 focus-visible:ring-lime-400/15"
+                className="h-12 rounded-xl border-white/10 bg-neutral-950/60 pr-11 pl-11 text-sm text-white shadow-none transition-all outline-none placeholder:text-neutral-600 hover:border-white/20 focus-visible:border-lime-400/60 focus-visible:bg-neutral-950/80 focus-visible:ring-4 focus-visible:ring-lime-400/15"
               />
               {search ? (
                 <button
                   type="button"
                   onClick={() => setSearch("")}
                   aria-label="Clear search"
-                  className="absolute top-1/2 right-3 -translate-y-1/2 rounded-full p-1 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-700 focus-visible:ring-2 focus-visible:ring-lime-400/60 focus-visible:outline-none"
+                  className="absolute top-1/2 right-3 -translate-y-1/2 rounded-full p-1 text-neutral-500 transition-colors hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-lime-400/60 focus-visible:outline-none"
                 >
                   <X className="size-4" aria-hidden="true" />
                 </button>
@@ -356,7 +356,7 @@ export default function TuitionsPage() {
                       "h-10 flex-1 rounded-full px-3.5 text-xs font-semibold whitespace-nowrap transition-all focus-visible:ring-4 focus-visible:ring-lime-400/30 focus-visible:outline-none sm:flex-none sm:text-sm",
                       mode === filter.value
                         ? "bg-lime-400 text-neutral-950 shadow-sm shadow-lime-400/30"
-                        : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200 hover:text-neutral-900"
+                        : "bg-white/5 text-neutral-400 hover:bg-white/10 hover:text-white"
                     )}
                   >
                     {filter.label}
@@ -371,7 +371,7 @@ export default function TuitionsPage() {
                 disabled={loading}
                 aria-label="Refresh tuitions"
                 title="Refresh tuitions"
-                className="size-10 shrink-0 rounded-full border-neutral-200 bg-white p-0 text-neutral-500 shadow-sm transition-colors hover:border-lime-300 hover:bg-lime-50 hover:text-lime-700"
+                className="size-10 shrink-0 rounded-full border-white/15 bg-white/5 p-0 text-neutral-300 shadow-sm transition-colors hover:border-lime-400/40 hover:bg-lime-400/10 hover:text-lime-200"
               >
                 <RefreshCw
                   className={cn("size-4", loading && "animate-spin")}
@@ -381,9 +381,9 @@ export default function TuitionsPage() {
             </div>
           </div>
 
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-neutral-100 pt-4">
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-4">
             <p className="flex items-center gap-2 text-xs font-medium text-neutral-500">
-              <span className="size-1.5 rounded-full bg-lime-500" />
+              <span className="size-1.5 rounded-full bg-lime-400" />
               {loading
                 ? "Loading tuition posts..."
                 : `${filteredTuitions.length} of ${tuitions.length} tuition${tuitions.length === 1 ? "" : "s"} shown`}
@@ -392,7 +392,7 @@ export default function TuitionsPage() {
               <button
                 type="button"
                 onClick={clearFilters}
-                className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold text-lime-700 transition-colors hover:bg-lime-50 focus-visible:ring-2 focus-visible:ring-lime-400/60 focus-visible:outline-none"
+                className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold text-lime-300 transition-colors hover:bg-lime-400/10 hover:text-lime-200 focus-visible:ring-2 focus-visible:ring-lime-400/60 focus-visible:outline-none"
               >
                 <X className="size-3.5" aria-hidden="true" />
                 Clear filters
@@ -404,10 +404,10 @@ export default function TuitionsPage() {
 
       <section className="mx-auto max-w-7xl px-4 pt-12 pb-16 sm:px-6 lg:px-8 lg:pt-14">
         <div className="mb-6">
-          <p className="text-xs font-semibold tracking-widest text-lime-700 uppercase">
+          <p className="text-xs font-semibold tracking-widest text-lime-300 uppercase">
             Available opportunities
           </p>
-          <h2 className="mt-1.5 text-2xl font-bold tracking-tight text-neutral-950 sm:text-3xl">
+          <h2 className="mt-1.5 text-2xl font-bold tracking-tight text-white sm:text-3xl">
             Tuition posts
           </h2>
         </div>
@@ -455,7 +455,7 @@ export default function TuitionsPage() {
                 type="button"
                 variant="outline"
                 onClick={clearFilters}
-                className="h-11 rounded-full border-neutral-200 bg-white px-6 text-sm font-semibold text-neutral-700 transition-colors hover:border-lime-300 hover:bg-lime-50 hover:text-lime-700"
+                className="h-11 rounded-full border-white/15 bg-white/5 px-6 text-sm font-semibold text-neutral-200 transition-colors hover:bg-white/10 hover:text-white"
               >
                 Clear filters
               </Button>
@@ -475,7 +475,7 @@ export default function TuitionsPage() {
               >
                 <article className="flex h-full flex-col">
                   <div className="flex items-start justify-between gap-3">
-                    <span className="inline-flex min-w-0 items-center gap-1.5 rounded-full bg-lime-50 px-2.5 py-1 text-[11px] font-semibold tracking-wide text-lime-700 ring-1 ring-lime-200/70">
+                    <span className="inline-flex min-w-0 items-center gap-1.5 rounded-full bg-lime-400/10 px-2.5 py-1 text-[11px] font-semibold tracking-wide text-lime-300 ring-1 ring-lime-400/25">
                       <BookOpen
                         className="size-3 shrink-0"
                         aria-hidden="true"
@@ -487,11 +487,11 @@ export default function TuitionsPage() {
                     <StatusBadge value={tuition.status} />
                   </div>
 
-                  <h3 className="mt-4 line-clamp-2 text-lg leading-snug font-bold tracking-tight text-neutral-950 transition-colors group-hover:text-lime-800">
+                  <h3 className="mt-4 line-clamp-2 text-lg leading-snug font-bold tracking-tight text-white transition-colors group-hover:text-lime-300">
                     {tuition.title || "Untitled tuition"}
                   </h3>
 
-                  <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-neutral-500">
+                  <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-neutral-400">
                     {tuition.description || "No description provided."}
                   </p>
 
@@ -522,30 +522,30 @@ export default function TuitionsPage() {
                     />
                   </div>
 
-                  <div className="mt-4 flex items-center justify-between gap-3 rounded-xl bg-neutral-50 px-3.5 py-3 ring-1 ring-neutral-100">
+                  <div className="mt-4 flex items-center justify-between gap-3 rounded-xl bg-white/[0.03] px-3.5 py-3 ring-1 ring-white/10">
                     <div className="flex items-center gap-2">
-                      <span className="flex size-8 items-center justify-center rounded-lg bg-lime-400/15 text-lime-700">
+                      <span className="flex size-8 items-center justify-center rounded-lg bg-lime-400/15 text-lime-300">
                         <Wallet className="size-4" aria-hidden="true" />
                       </span>
-                      <span className="text-xs font-medium text-neutral-500">
+                      <span className="text-xs font-medium text-neutral-400">
                         Monthly fee
                       </span>
                     </div>
-                    <span className="text-base font-bold tracking-tight text-neutral-950">
+                    <span className="text-base font-bold tracking-tight text-white">
                       {formatFee(tuition.monthlyFee)}
                     </span>
                   </div>
 
-                  <div className="mt-5 flex items-center justify-between gap-3 border-t border-neutral-100 pt-4">
+                  <div className="mt-5 flex items-center justify-between gap-3 border-t border-white/10 pt-4">
                     <div className="flex min-w-0 items-center gap-2.5">
-                      <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-neutral-900 text-xs font-bold text-white">
+                      <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-lime-400/15 text-xs font-bold text-lime-300 ring-1 ring-lime-400/25">
                         {getInitials(tuition.tutorName)}
                       </span>
                       <span className="min-w-0 leading-tight">
-                        <span className="block truncate text-sm font-semibold text-neutral-800">
+                        <span className="block truncate text-sm font-semibold text-neutral-100">
                           {tuition.tutorName || "Tutor"}
                         </span>
-                        <span className="mt-0.5 block text-[11px] text-neutral-400">
+                        <span className="mt-0.5 block text-[11px] text-neutral-500">
                           Posted {formatDate(tuition.createdAt)}
                         </span>
                       </span>

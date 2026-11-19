@@ -53,7 +53,7 @@ type Tuition = {
 type SetToasts = Dispatch<SetStateAction<ToastItem[]>>
 
 const cardClasses =
-  "rounded-[1.5rem] border border-neutral-200/80 bg-white p-6 shadow-sm"
+  "rounded-[1.5rem] border border-white/10 bg-neutral-900/70 p-6 shadow-lg shadow-black/10"
 
 function notify(
   setToasts: SetToasts,
@@ -93,9 +93,11 @@ function ApprovalBadge({ value }: { value?: string }) {
     <span
       className={cn(
         "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold",
-        approved && "border-emerald-200 bg-emerald-50 text-emerald-700",
-        rejected && "border-rose-200 bg-rose-50 text-rose-700",
-        !approved && !rejected && "border-amber-200 bg-amber-50 text-amber-700"
+        approved && "border-lime-400/30 bg-lime-400/10 text-lime-300",
+        rejected && "border-rose-400/30 bg-rose-400/10 text-rose-300",
+        !approved &&
+          !rejected &&
+          "border-amber-400/30 bg-amber-400/10 text-amber-300"
       )}
     >
       <Icon className="size-3.5" aria-hidden="true" />
@@ -113,8 +115,8 @@ function StatusBadge({ value }: { value?: string }) {
       className={cn(
         "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold",
         active
-          ? "border-lime-200 bg-lime-50 text-lime-700"
-          : "border-neutral-200 bg-neutral-100 text-neutral-600"
+          ? "border-lime-400/30 bg-lime-400/10 text-lime-300"
+          : "border-white/10 bg-white/5 text-neutral-400"
       )}
     >
       <Icon className="size-3.5" aria-hidden="true" />
@@ -139,13 +141,13 @@ function DetailItem({
   value: string
 }) {
   return (
-    <div className="flex items-start gap-3 rounded-xl border border-neutral-100 bg-neutral-50 px-3 py-3">
-      <span className="mt-0.5 shrink-0 text-neutral-400">{icon}</span>
+    <div className="flex items-start gap-3 rounded-xl border border-white/5 bg-white/[0.03] px-3 py-3">
+      <span className="mt-0.5 shrink-0 text-neutral-500">{icon}</span>
       <div className="min-w-0">
-        <p className="text-[11px] font-medium tracking-wide text-neutral-400 uppercase">
+        <p className="text-[11px] font-semibold tracking-wider text-neutral-500 uppercase">
           {label}
         </p>
-        <p className="mt-0.5 truncate text-sm font-medium text-neutral-800">
+        <p className="mt-0.5 truncate text-sm font-medium text-neutral-200">
           {value || "—"}
         </p>
       </div>
@@ -156,13 +158,13 @@ function DetailItem({
 function DetailSkeleton() {
   return (
     <div className="space-y-6">
-      <Skeleton className="h-44 w-full rounded-2xl bg-neutral-200" />
+      <Skeleton className="h-44 w-full rounded-[2rem] bg-white/10" />
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="space-y-6">
-          <Skeleton className="h-40 w-full rounded-2xl bg-neutral-200" />
-          <Skeleton className="h-64 w-full rounded-2xl bg-neutral-200" />
+          <Skeleton className="h-40 w-full rounded-[1.5rem] bg-white/10" />
+          <Skeleton className="h-64 w-full rounded-[1.5rem] bg-white/10" />
         </div>
-        <Skeleton className="h-56 w-full rounded-2xl bg-neutral-200" />
+        <Skeleton className="h-56 w-full rounded-[1.5rem] bg-white/10" />
       </div>
     </div>
   )
@@ -296,7 +298,7 @@ export default function TuitionDetailPage() {
   }
 
   return (
-    <main className="min-h-svh bg-neutral-50 text-neutral-900">
+    <main className="min-h-svh bg-neutral-950 text-white">
       <ToastViewport
         toasts={toasts}
         onDismiss={(toastId) =>
@@ -309,7 +311,7 @@ export default function TuitionDetailPage() {
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <Link
           href="/tuitions"
-          className="inline-flex items-center gap-2 rounded-md text-sm font-semibold text-neutral-600 transition-colors hover:text-lime-700 focus-visible:ring-4 focus-visible:ring-lime-400/30 focus-visible:outline-none"
+          className="inline-flex items-center gap-2 rounded-md text-sm font-semibold text-neutral-400 transition-colors hover:text-lime-300 focus-visible:ring-4 focus-visible:ring-lime-400/30 focus-visible:outline-none"
         >
           <ArrowLeft className="size-4" aria-hidden="true" />
           Back to all tuitions
@@ -319,15 +321,15 @@ export default function TuitionDetailPage() {
           {loading ? (
             <DetailSkeleton />
           ) : error || !tuition ? (
-            <div className="rounded-[2rem] border border-neutral-200 bg-white p-10 text-center shadow-sm sm:p-14">
+            <div className="rounded-[2rem] border border-white/10 bg-neutral-900/70 p-10 text-center shadow-lg shadow-black/10 sm:p-14">
               <AlertCircle
-                className="mx-auto size-9 text-rose-500"
+                className="mx-auto size-9 text-rose-400"
                 aria-hidden="true"
               />
-              <h1 className="mt-4 text-lg font-semibold text-neutral-900">
+              <h1 className="mt-4 text-lg font-semibold text-white">
                 {error || "Tuition not found"}
               </h1>
-              <p className="mt-2 text-sm text-neutral-500">
+              <p className="mt-2 text-sm text-neutral-400">
                 The tuition may have been removed or is unavailable.
               </p>
               <div className="mt-5 flex flex-wrap justify-center gap-2">
@@ -335,7 +337,7 @@ export default function TuitionDetailPage() {
                   type="button"
                   variant="outline"
                   onClick={() => setRefreshKey((current) => current + 1)}
-                  className="h-11 gap-2 rounded-full border-neutral-200 bg-white px-5 text-sm font-semibold text-neutral-700 hover:border-lime-300 hover:bg-lime-50 hover:text-lime-700"
+                  className="h-11 gap-2 rounded-full border-white/15 bg-white/5 px-5 text-sm font-semibold text-neutral-200 hover:border-lime-400/40 hover:bg-lime-400/10 hover:text-lime-200"
                 >
                   <RefreshCw className="size-4" aria-hidden="true" />
                   Try again
@@ -350,7 +352,7 @@ export default function TuitionDetailPage() {
             </div>
           ) : (
             <>
-              <section className="relative isolate overflow-hidden rounded-[2rem] bg-neutral-950 p-6 text-white shadow-lg shadow-black/10 sm:p-8">
+              <section className="relative isolate overflow-hidden rounded-[2rem] border border-white/10 bg-neutral-950 p-6 text-white shadow-lg shadow-black/20 sm:p-8">
                 <div
                   aria-hidden="true"
                   className="pointer-events-none absolute inset-0 -z-10"
@@ -381,7 +383,7 @@ export default function TuitionDetailPage() {
               <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
                 <div className="space-y-6">
                   <section className={cardClasses}>
-                    <h2 className="text-lg font-bold tracking-tight text-neutral-950">
+                    <h2 className="text-lg font-bold tracking-tight text-white">
                       Tuition details
                     </h2>
                     <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -419,24 +421,24 @@ export default function TuitionDetailPage() {
                   </section>
 
                   <section className={cardClasses}>
-                    <h2 className="text-lg font-bold tracking-tight text-neutral-950">
+                    <h2 className="text-lg font-bold tracking-tight text-white">
                       Description
                     </h2>
-                    <p className="mt-4 text-sm leading-7 whitespace-pre-line text-neutral-600">
+                    <p className="mt-4 text-sm leading-7 whitespace-pre-line text-neutral-400">
                       {tuition.description || "No description provided."}
                     </p>
                   </section>
 
                   <section className={cardClasses}>
-                    <h2 className="text-lg font-bold tracking-tight text-neutral-950">
+                    <h2 className="text-lg font-bold tracking-tight text-white">
                       About the tutor
                     </h2>
                     <div className="mt-4 flex items-center gap-3">
-                      <span className="flex size-11 items-center justify-center rounded-full bg-neutral-900 text-white">
+                      <span className="flex size-11 items-center justify-center rounded-full bg-lime-400/15 text-lime-300 ring-1 ring-lime-400/25">
                         <UserRound className="size-5" aria-hidden="true" />
                       </span>
                       <div>
-                        <p className="text-sm font-semibold text-neutral-900">
+                        <p className="text-sm font-semibold text-white">
                           {tuition.tutorName || "Tutor"}
                         </p>
                         <p className="text-xs text-neutral-500">
@@ -448,11 +450,11 @@ export default function TuitionDetailPage() {
                 </div>
 
                 <aside className="lg:sticky lg:top-6 lg:self-start">
-                  <div className="rounded-[1.5rem] border border-neutral-200/80 bg-white p-6 shadow-sm">
-                    <p className="text-xs font-semibold tracking-widest text-lime-700 uppercase">
+                  <div className="rounded-[1.5rem] border border-white/10 bg-neutral-900/70 p-6 shadow-lg shadow-black/10">
+                    <p className="text-xs font-semibold tracking-widest text-lime-300 uppercase">
                       Monthly fee
                     </p>
-                    <p className="mt-2 text-3xl font-bold text-neutral-900">
+                    <p className="mt-2 text-3xl font-bold text-white">
                       {formatFee(tuition.monthlyFee)}
                     </p>
                     <p className="mt-1 text-xs text-neutral-500">
@@ -486,7 +488,7 @@ export default function TuitionDetailPage() {
                           : "I Want This Tuition"}
                     </Button>
 
-                    <p className="mt-3 text-center text-xs leading-relaxed text-neutral-500">
+                    <p className="mt-3 text-center text-xs leading-relaxed text-neutral-400">
                       {applied
                         ? "Your application is pending review."
                         : "Sign in as a student to send your application to the tutor."}
@@ -501,7 +503,7 @@ export default function TuitionDetailPage() {
 
       {showApplyForm ? (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
           onClick={() => {
             if (!submitting) setShowApplyForm(false)
           }}
@@ -512,15 +514,15 @@ export default function TuitionDetailPage() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="apply-dialog-title"
-            className="w-full max-w-md rounded-[1.5rem] border border-neutral-200 bg-white p-6 shadow-2xl"
+            className="w-full max-w-md rounded-[1.5rem] border border-white/10 bg-neutral-900 p-6 shadow-2xl shadow-black/50"
           >
             <h2
               id="apply-dialog-title"
-              className="text-lg font-bold text-neutral-900"
+              className="text-lg font-bold text-white"
             >
               Apply for this tuition
             </h2>
-            <p className="mt-1.5 text-sm text-neutral-500">
+            <p className="mt-1.5 text-sm text-neutral-400">
               Share a few details so the tutor can review your request.
             </p>
 
@@ -528,7 +530,7 @@ export default function TuitionDetailPage() {
               <div>
                 <label
                   htmlFor="apply-phone"
-                  className="text-xs font-semibold text-neutral-700"
+                  className="text-xs font-semibold text-neutral-200"
                 >
                   Phone number
                 </label>
@@ -541,14 +543,14 @@ export default function TuitionDetailPage() {
                   placeholder="e.g. 01712345678"
                   maxLength={40}
                   required
-                  className="mt-2 h-11 w-full rounded-xl border-neutral-200 bg-white px-3 text-sm text-neutral-900 placeholder:text-neutral-400 focus-visible:border-lime-500 focus-visible:ring-lime-500/20"
+                  className="mt-2 h-11 w-full rounded-xl border-white/10 bg-neutral-950/60 px-3 text-sm text-white transition-all outline-none placeholder:text-neutral-600 hover:border-white/20 focus-visible:border-lime-400/60 focus-visible:ring-4 focus-visible:ring-lime-400/15"
                 />
               </div>
 
               <div>
                 <label
                   htmlFor="apply-schedule"
-                  className="text-xs font-semibold text-neutral-700"
+                  className="text-xs font-semibold text-neutral-200"
                 >
                   Preferred schedule
                 </label>
@@ -564,17 +566,17 @@ export default function TuitionDetailPage() {
                   placeholder="e.g. Weekdays, 5:00 PM - 6:00 PM"
                   maxLength={120}
                   required
-                  className="mt-2 h-11 w-full rounded-xl border-neutral-200 bg-white px-3 text-sm text-neutral-900 placeholder:text-neutral-400 focus-visible:border-lime-500 focus-visible:ring-lime-500/20"
+                  className="mt-2 h-11 w-full rounded-xl border-white/10 bg-neutral-950/60 px-3 text-sm text-white transition-all outline-none placeholder:text-neutral-600 hover:border-white/20 focus-visible:border-lime-400/60 focus-visible:ring-4 focus-visible:ring-lime-400/15"
                 />
               </div>
 
               <div>
                 <label
                   htmlFor="apply-note"
-                  className="text-xs font-semibold text-neutral-700"
+                  className="text-xs font-semibold text-neutral-200"
                 >
                   Application note{" "}
-                  <span className="font-normal text-neutral-400">
+                  <span className="font-normal text-neutral-500">
                     (optional)
                   </span>
                 </label>
@@ -587,7 +589,7 @@ export default function TuitionDetailPage() {
                   rows={4}
                   maxLength={1000}
                   placeholder="Tell the tutor why you are interested..."
-                  className="mt-2 w-full resize-none rounded-xl border border-neutral-200 bg-white px-3 py-2.5 text-sm text-neutral-900 shadow-sm outline-none placeholder:text-neutral-400 focus-visible:border-lime-500 focus-visible:ring-4 focus-visible:ring-lime-500/20"
+                  className="mt-2 w-full resize-none rounded-xl border border-white/10 bg-neutral-950/60 px-3 py-2.5 text-sm text-white shadow-sm transition-all outline-none placeholder:text-neutral-600 hover:border-white/20 focus-visible:border-lime-400/60 focus-visible:ring-4 focus-visible:ring-lime-400/15"
                 />
               </div>
             </div>
@@ -598,7 +600,7 @@ export default function TuitionDetailPage() {
                 variant="outline"
                 onClick={() => setShowApplyForm(false)}
                 disabled={submitting}
-                className="h-11 rounded-full border-neutral-200 bg-white px-5 text-sm font-semibold text-neutral-600 hover:bg-neutral-50"
+                className="h-11 rounded-full border-white/15 bg-white/5 px-5 text-sm font-semibold text-neutral-200 transition-colors hover:bg-white/10 hover:text-white"
               >
                 Cancel
               </Button>

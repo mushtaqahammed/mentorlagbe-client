@@ -1,10 +1,5 @@
-import { DashboardPage } from "@/components/dashboard/dashboard-page"
+import { AdminUsersManager } from "@/components/admin/admin-users-manager"
 
 export default function ManageUsersPage() {
-  return (
-    <DashboardPage
-      title="Manage Users"
-      description="View and manage every student, tutor, and admin on MentorLagbe."
-    />
-  )
+  return <AdminUsersManager />
 }

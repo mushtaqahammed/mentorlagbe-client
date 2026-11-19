@@ -1,10 +1,5 @@
-import { DashboardPage } from "@/components/dashboard/dashboard-page"
+import { AdminDashboard } from "@/components/admin/admin-dashboard"
 
 export default function AdminDashboardPage() {
-  return (
-    <DashboardPage
-      title="Admin Overview"
-      description="Review new tuitions, manage users, and keep an eye on platform transactions."
-    />
-  )
+  return <AdminDashboard />
 }
