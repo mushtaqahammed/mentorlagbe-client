@@ -108,3 +108,63 @@ export type AdminTuitionsResponse = {
 export type AdminTuitionApprovalResponse = {
   tuition: AdminTuition
 }
+
+export const ADMIN_TRANSACTION_ROLES = ["tutor", "student"] as const
+
+export type AdminTransactionRole = (typeof ADMIN_TRANSACTION_ROLES)[number]
+
+export type AdminTransactionRoleFilter = AdminTransactionRole | "all"
+
+export const ADMIN_TRANSACTION_PLANS = ["pro-tutor", "pro-student"] as const
+
+export type AdminTransactionPlanId = (typeof ADMIN_TRANSACTION_PLANS)[number]
+
+export type AdminTransactionPlanFilter = AdminTransactionPlanId | "all"
+
+export const ADMIN_TRANSACTIONS_PAGE_SIZE = 8
+
+export type AdminTransaction = {
+  /** `payments._id`. */
+  id: string
+  userId: string
+  /** Joined from the Better Auth `user` collection; falls back to the email. */
+  userName: string
+  email: string
+  role: AdminTransactionRole
+  planId: AdminTransactionPlanId
+  planName: string
+  /** Amount in major currency units (e.g. 15 for $15.00). */
+  amount: number
+  /** ISO 4217 currency code. */
+  currency: string
+  /** Locale-formatted amount, ready to render. */
+  amountFormatted: string
+  /** Stripe Checkout Session id, or the subscription id as a fallback. */
+  transactionId: string
+  stripeSessionId: string
+  stripeSubscriptionId: string | null
+  paymentDate: string | null
+}
+
+export type AdminTransactionCounts = Record<AdminTransactionRoleFilter, number>
+
+export type AdminTransactionsSummary = {
+  /** Every verified Stripe subscription payment, regardless of filters. */
+  total: number
+  tutorCount: number
+  studentCount: number
+  revenue: StripeRevenueStats
+}
+
+export type AdminTransactionsResponse = {
+  transactions: AdminTransaction[]
+  /** Transactions matching the current search, role and plan filters. */
+  total: number
+  /** Role counts for the current search and plan filter (ignores the role tab). */
+  counts: AdminTransactionCounts
+  summary: AdminTransactionsSummary
+  page: number
+  totalPages: number
+  limit: number
+  updatedAt: string
+}

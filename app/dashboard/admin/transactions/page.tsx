@@ -1,10 +1,5 @@
-import { DashboardPage } from "@/components/dashboard/dashboard-page"
+import { AdminTransactionsManager } from "@/components/admin/admin-transactions-manager"
 
 export default function TransactionsPage() {
-  return (
-    <DashboardPage
-      title="Transactions"
-      description="Monitor subscription payments and platform transactions."
-    />
-  )
+  return <AdminTransactionsManager />
 }
