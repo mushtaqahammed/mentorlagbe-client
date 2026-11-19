@@ -33,7 +33,7 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { redirect, useRouter } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -44,7 +44,9 @@ import {
   DAYS_PER_WEEK_OPTIONS,
   SUBJECT_OPTIONS,
   createTuition,
+  createTuitionCount,
 } from "@/lib/actions/tuition"
+import { error } from "console"
 
 type FormValues = {
   title: string
@@ -232,42 +234,45 @@ export function PostTuitionForm() {
     setValues((current) => ({ ...current, [field]: value }))
   }
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
 
+const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  event.preventDefault()
+
+  try {
     setIsSubmitting(true)
-    setSubmitError("")
 
-    try {
-      const { data: session, error } = await authClient.getSession()
-      const token = session?.session.token
+    const { data: session } = await authClient.getSession()
+    const token = session?.session.token
+    const tutorId = session?.user?.id
 
-      if (error || !token) {
-        throw new Error("Please sign in again to post a tuition.")
-      }
+    if (!token || !tutorId) return
 
-      await createTuition(
-        {
-          ...values,
-          monthlyFee: Number(values.monthlyFee),
-          daysPerWeek: Number(values.daysPerWeek),
-          bannerImage: imageFile?.name ?? "",
-        },
-        token
-      )
+    // Check existing tuition count first
+    const countRes = await createTuitionCount(`tutorId=${tutorId}`)
 
-      router.push("/dashboard/tutor/my-tuitions")
-      router.refresh()
-    } catch (submitFailure) {
-      setSubmitError(
-        submitFailure instanceof Error
-          ? submitFailure.message
-          : "Could not post this tuition. Please try again."
-      )
-    } finally {
-      setIsSubmitting(false)
+    // Free tutor can post maximum 2 tuitions
+    if (countRes.count >= 2) {
+      router.push("/pricing")
+      return
     }
+
+    // Create tuition if limit is not reached
+    await createTuition(
+      {
+        ...values,
+        monthlyFee: Number(values.monthlyFee),
+        daysPerWeek: Number(values.daysPerWeek),
+        bannerImage: imageFile?.name ?? "",
+      },
+      token
+    )
+
+    router.push("/dashboard/tutor/my-tuitions")
+    router.refresh()
+  } finally {
+    setIsSubmitting(false)
   }
+}
 
   return (
     <div className="space-y-6">
