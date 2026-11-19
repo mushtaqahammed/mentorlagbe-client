@@ -1,3 +1,5 @@
+import { isPubliclyVisibleTuition } from "@/lib/tuitions/public"
+
 export const runtime = "nodejs"
 
 export async function GET(
@@ -21,6 +23,10 @@ export async function GET(
     }
 
     const data = await response.json()
+
+    if (!isPubliclyVisibleTuition(data)) {
+      return Response.json({ error: "Tuition not found" }, { status: 404 })
+    }
 
     return Response.json(data)
   } catch (error) {

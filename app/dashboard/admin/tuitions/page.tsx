@@ -1,10 +1,5 @@
-import { DashboardPage } from "@/components/dashboard/dashboard-page"
+import { AdminTuitionApprovals } from "@/components/admin/admin-tuition-approvals"
 
 export default function TuitionApprovalsPage() {
-  return (
-    <DashboardPage
-      title="Tuition Approvals"
-      description="Review newly posted tuitions and approve or reject them."
-    />
-  )
+  return <AdminTuitionApprovals />
 }

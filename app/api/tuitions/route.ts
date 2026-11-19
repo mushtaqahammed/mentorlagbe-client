@@ -1,5 +1,6 @@
 import { headers } from "next/headers"
 import { auth } from "@/lib/auth"
+import { isPubliclyVisibleTuition } from "@/lib/tuitions/public"
 
 export const runtime = "nodejs"
 
@@ -53,6 +54,19 @@ export async function GET() {
     }
 
     const data = await response.json()
+
+    // Defence in depth: regardless of what the upstream returns, pending,
+    // rejected and closed posts must never reach public listings.
+    if (Array.isArray(data)) {
+      return Response.json(data.filter(isPubliclyVisibleTuition))
+    }
+
+    if (data && typeof data === "object" && Array.isArray(data.tuitions)) {
+      return Response.json({
+        ...data,
+        tuitions: data.tuitions.filter(isPubliclyVisibleTuition),
+      })
+    }
 
     return Response.json(data)
   } catch (error) {
