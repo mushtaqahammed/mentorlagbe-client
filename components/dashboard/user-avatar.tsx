@@ -1,3 +1,4 @@
+import { AvatarImage } from "@/components/profile/avatar-image"
 import { cn } from "@/lib/utils"
 
 export type DashboardUser = {
@@ -15,13 +16,6 @@ export function UserAvatar({
   className?: string
 }) {
   const name = user.name || user.email || "User"
-  const initials = name
-    .split(" ")
-    .map((part) => part[0])
-    .filter(Boolean)
-    .slice(0, 2)
-    .join("")
-    .toUpperCase()
 
   return (
     <span
@@ -30,12 +24,11 @@ export function UserAvatar({
         className
       )}
     >
-      {user.image ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={user.image} alt={name} className="size-full object-cover" />
-      ) : (
-        initials || "U"
-      )}
+      <AvatarImage
+        src={user.image}
+        name={name}
+        className="size-full object-cover"
+      />
     </span>
   )
 }

@@ -248,7 +248,7 @@ export default function TuitionDetailPage() {
       const { data: session, error: sessionError } =
         await authClient.getSession()
 
-      if (sessionError || !session?.user || !session.session.token) {
+      if (sessionError || !session?.user) {
         throw new Error("Please sign in as a student to apply.")
       }
 
@@ -256,7 +256,7 @@ export default function TuitionDetailPage() {
         throw new Error("Only student accounts can apply for tuitions.")
       }
 
-      await applyForTuition(id, session.session.token, {
+      await applyForTuition(id, {
         phone,
         preferredSchedule,
         note: applicationDetails.note.trim(),

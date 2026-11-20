@@ -291,6 +291,16 @@ export function ManageApplicants() {
     }
   }, [reloadKey])
 
+  useEffect(() => {
+    if (!reviewTarget) return
+
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape" && !busyId) setReviewTarget(null)
+    }
+    window.addEventListener("keydown", onKeyDown)
+    return () => window.removeEventListener("keydown", onKeyDown)
+  }, [reviewTarget, busyId])
+
   function refresh() {
     showErrorStateRef.current = true
     setLoading(true)

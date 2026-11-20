@@ -520,22 +520,4 @@ export function AuthLoader({ fields = 2 }: { fields?: number }) {
   )
 }
 
-export function UpdateProfileLoader() {
-  return (
-    <PageLoader label="Loading profile settings">
-      <div aria-hidden="true">
-        <Skeleton className="h-10 w-72 max-w-full bg-white/10" />
-        <Skeleton className="mt-4 h-3 w-full max-w-xl bg-white/10" />
-        <CardSkeleton className="mt-8 max-w-2xl">
-          <Skeleton className="h-5 w-40 bg-white/10" />
-          <div className="mt-6 space-y-5">
-            <Skeleton className="h-11 w-full rounded-xl bg-white/10" />
-            <Skeleton className="h-11 w-full rounded-xl bg-white/10" />
-            <Skeleton className="h-28 w-full rounded-xl bg-white/10" />
-          </div>
-          <SkeletonButton className="mt-6 h-11 w-full" />
-        </CardSkeleton>
-      </div>
-    </PageLoader>
-  )
-}
+

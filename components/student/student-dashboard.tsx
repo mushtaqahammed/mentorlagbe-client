@@ -22,7 +22,6 @@ import {
 } from "@/components/dashboard/stat-card"
 import { Button } from "@/components/ui/button"
 import { getStudentStats, type StudentStats } from "@/lib/actions/applications"
-import { authClient } from "@/lib/auth-client"
 import { notify, userMessage } from "@/lib/notify"
 import { cn } from "@/lib/utils"
 
@@ -33,24 +32,18 @@ export function StudentDashboard() {
   const [refreshKey, setRefreshKey] = React.useState(0)
 
   React.useEffect(() => {
+    let active = true
+
     async function loadStats() {
       setLoading(true)
       setError("")
 
       try {
-        const { data: session, error: sessionError } =
-          await authClient.getSession()
-
-        if (sessionError || !session?.session.token) {
-          throw new Error("Please sign in again to view your dashboard.")
-        }
-
-        if (String(session.user.role).toLowerCase() !== "student") {
-          throw new Error("Only student accounts can view this dashboard.")
-        }
-
-        setStats(await getStudentStats())
+        const data = await getStudentStats()
+        if (!active) return
+        setStats(data)
       } catch (loadError) {
+        if (!active) return
         const message = userMessage(
           loadError,
           "Could not load your dashboard statistics."
@@ -58,11 +51,14 @@ export function StudentDashboard() {
         setError(message)
         notify.error("Could not load dashboard statistics", message)
       } finally {
-        setLoading(false)
+        if (active) setLoading(false)
       }
     }
 
     loadStats()
+    return () => {
+      active = false
+    }
   }, [refreshKey])
 
   return (

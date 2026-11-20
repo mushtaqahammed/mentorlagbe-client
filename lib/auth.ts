@@ -89,13 +89,41 @@ export const auth = betterAuth({
           return { data: { ...user, role } }
         },
       },
+      update: {
+        // The catch-all /api/auth route exposes Better Auth's updateUser
+        // endpoint. `role` has input: true for sign-up, so without this guard
+        // any signed-in user could promote themselves to Admin. Subscription
+        // fields are server-owned as well and must never be client-writable.
+        before: async (user) => {
+          const protectedFields = [
+            "role",
+            "plan",
+            "subscriptionStatus",
+            "proPlanId",
+            "stripeSubscriptionId",
+            "stripeCustomerId",
+            "proActivatedAt",
+            "subscriptionStartDate",
+            "subscriptionEndDate",
+          ]
+
+          if (protectedFields.some((field) => field in user)) return false
+        },
+      },
     },
   },
 
-  socialProviders: {
-    google: {
-      clientId: process.env.GOOGLE_CLIENT_ID as string,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
-    },
-  },
+  // Only register Google when both credentials are present. Registering it
+  // with undefined values makes Better Auth warn on every build and leaves a
+  // sign-in button that can never work.
+  ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+    ? {
+        socialProviders: {
+          google: {
+            clientId: process.env.GOOGLE_CLIENT_ID,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+          },
+        },
+      }
+    : {}),
 })

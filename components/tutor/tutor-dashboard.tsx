@@ -21,9 +21,9 @@ import {
   formatPlan,
 } from "@/components/dashboard/stat-card"
 import { Button } from "@/components/ui/button"
-import { getTutorStats, type TutorStats } from "@/lib/actions/tuition"
-import { authClient } from "@/lib/auth-client"
+import { getTutorStats } from "@/lib/actions/tuition"
 import { notify, userMessage } from "@/lib/notify"
+import type { TutorStats } from "@/lib/tuitions/options"
 import { cn } from "@/lib/utils"
 
 export function TutorDashboard() {
@@ -33,20 +33,18 @@ export function TutorDashboard() {
   const [refreshKey, setRefreshKey] = React.useState(0)
 
   React.useEffect(() => {
+    let active = true
+
     async function loadStats() {
       setLoading(true)
       setError("")
 
       try {
-        const { data: session, error: sessionError } =
-          await authClient.getSession()
-
-        if (sessionError || !session?.session.token) {
-          throw new Error("Please sign in again to view your dashboard.")
-        }
-
-        setStats(await getTutorStats(session.session.token))
+        const data = await getTutorStats()
+        if (!active) return
+        setStats(data)
       } catch (loadError) {
+        if (!active) return
         const message = userMessage(
           loadError,
           "Could not load your dashboard statistics."
@@ -54,11 +52,14 @@ export function TutorDashboard() {
         setError(message)
         notify.error("Could not load dashboard statistics", message)
       } finally {
-        setLoading(false)
+        if (active) setLoading(false)
       }
     }
 
     loadStats()
+    return () => {
+      active = false
+    }
   }, [refreshKey])
 
   return (

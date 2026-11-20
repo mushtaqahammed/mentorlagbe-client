@@ -43,6 +43,12 @@ export default function SignInPage() {
         return
       }
 
+      // Refresh the shared session so the navbar immediately uses the
+      // authenticated user's picture (not a stale cached session).
+      await authClient
+        .getSession({ query: { disableCookieCache: true } })
+        .catch(() => null)
+
       notify.success("Welcome back!")
       router.push("/")
       router.refresh()

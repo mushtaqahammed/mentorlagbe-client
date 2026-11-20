@@ -2,10 +2,8 @@
 
 import {
   useCallback,
-  useEffect,
   useRef,
   useState,
-  type ChangeEvent,
   type FormEvent,
 } from "react"
 import { useRouter } from "next/navigation"
@@ -13,25 +11,22 @@ import {
   AlertCircle,
   Camera,
   Check,
-  Image as ImageIcon,
-  Link2,
   Loader2,
   Pencil,
-  Trash2,
-  UploadCloud,
   X,
 } from "lucide-react"
 
 import { RoleBadge } from "@/components/dashboard/role-badge"
 import { UserAvatar } from "@/components/dashboard/user-avatar"
+import {
+  ProfileImageField,
+  type ProfileImageFieldHandle,
+} from "@/components/profile/profile-image-field"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { authClient } from "@/lib/auth-client"
 import { notify, userMessage } from "@/lib/notify"
 import type { ProfileUser } from "@/lib/profile"
-import { cn } from "@/lib/utils"
-
-type ImageMode = "keep" | "upload" | "url" | "remove"
 
 type FormState = {
   name: string
@@ -41,34 +36,14 @@ type FormState = {
 type FormErrors = {
   name?: string
   phone?: string
-  image?: string
 }
 
-const MAX_FILE_BYTES = 5 * 1024 * 1024
-const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"]
 const PHONE_PATTERN = /^\+?[0-9][0-9\s-]{5,19}$/
-
-const IMAGE_MODES: { value: ImageMode; label: string; icon: typeof Camera }[] = [
-  { value: "keep", label: "Current", icon: Check },
-  { value: "upload", label: "Upload", icon: UploadCloud },
-  { value: "url", label: "Image URL", icon: Link2 },
-  { value: "remove", label: "Remove", icon: Trash2 },
-]
 
 const labelClass =
   "block text-xs font-semibold tracking-wide text-neutral-400 uppercase"
 const fieldClass =
   "mt-2 h-11 rounded-xl border-white/10 bg-white/[0.04] px-3.5 text-sm text-white placeholder:text-neutral-600 focus-visible:border-lime-400/40 focus-visible:ring-3 focus-visible:ring-lime-400/15"
-
-function isValidHttpUrl(value: string) {
-  if (!value) return false
-  try {
-    const url = new URL(value)
-    return url.protocol === "http:" || url.protocol === "https:"
-  } catch {
-    return false
-  }
-}
 
 function formatMemberSince(value: string | null) {
   if (!value) return "—"
@@ -86,45 +61,18 @@ export function ProfileManager({ initialUser }: { initialUser: ProfileUser }) {
   const [profile, setProfile] = useState(initialUser)
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [uploading, setUploading] = useState(false)
   const [form, setForm] = useState<FormState>({
     name: initialUser.name,
     phone: initialUser.phone,
   })
   const [errors, setErrors] = useState<FormErrors>({})
-  const [imageMode, setImageMode] = useState<ImageMode>("keep")
-  const [imageUrl, setImageUrl] = useState(initialUser.image ?? "")
-  const [selectedFile, setSelectedFile] = useState<File | null>(null)
-  const [objectUrl, setObjectUrl] = useState<string | null>(null)
-  const [previewFailed, setPreviewFailed] = useState(false)
-  const objectUrlRef = useRef<string | null>(null)
+  const imageFieldRef = useRef<ProfileImageFieldHandle>(null)
 
-  useEffect(() => {
-    return () => {
-      if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current)
-    }
+  const resetForm = useCallback((user: ProfileUser) => {
+    setForm({ name: user.name, phone: user.phone })
+    setErrors({})
+    imageFieldRef.current?.reset()
   }, [])
-
-  const releaseObjectUrl = useCallback(() => {
-    if (objectUrlRef.current) {
-      URL.revokeObjectURL(objectUrlRef.current)
-      objectUrlRef.current = null
-    }
-    setObjectUrl(null)
-    setSelectedFile(null)
-  }, [])
-
-  const resetForm = useCallback(
-    (user: ProfileUser) => {
-      releaseObjectUrl()
-      setForm({ name: user.name, phone: user.phone })
-      setErrors({})
-      setImageMode("keep")
-      setImageUrl(user.image ?? "")
-      setPreviewFailed(false)
-    },
-    [releaseObjectUrl]
-  )
 
   const startEditing = () => {
     resetForm(profile)
@@ -135,45 +83,6 @@ export function ProfileManager({ initialUser }: { initialUser: ProfileUser }) {
     resetForm(profile)
     setEditing(false)
   }
-
-  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
-
-    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
-      setErrors((current) => ({
-        ...current,
-        image: "Choose a JPG, PNG, WebP or GIF image.",
-      }))
-      return
-    }
-
-    if (file.size > MAX_FILE_BYTES) {
-      setErrors((current) => ({
-        ...current,
-        image: "Images must be 5 MB or smaller.",
-      }))
-      return
-    }
-
-    releaseObjectUrl()
-    const url = URL.createObjectURL(file)
-    objectUrlRef.current = url
-    setObjectUrl(url)
-    setSelectedFile(file)
-    setImageMode("upload")
-    setPreviewFailed(false)
-    setErrors((current) => ({ ...current, image: undefined }))
-  }
-
-  const previewSource =
-    imageMode === "upload"
-      ? objectUrl
-      : imageMode === "url" && isValidHttpUrl(imageUrl.trim())
-        ? imageUrl.trim()
-        : imageMode === "keep"
-          ? profile.image
-          : null
 
   const validate = () => {
     const nextErrors: FormErrors = {}
@@ -188,52 +97,20 @@ export function ProfileManager({ initialUser }: { initialUser: ProfileUser }) {
       nextErrors.phone = "Enter a valid phone number."
     }
 
-    if (imageMode === "upload" && !selectedFile) {
-      nextErrors.image = "Choose an image to upload."
-    }
-
-    if (imageMode === "url" && !isValidHttpUrl(imageUrl.trim())) {
-      nextErrors.image = "Enter a valid http:// or https:// image URL."
-    }
-
     setErrors(nextErrors)
     return Object.keys(nextErrors).length === 0
   }
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    if (saving || uploading) return
+    if (saving) return
     if (!validate()) return
+    if (imageFieldRef.current?.validate()) return
 
     setSaving(true)
 
     try {
-      let imageValue: string | null | undefined
-
-      if (imageMode === "upload" && selectedFile) {
-        setUploading(true)
-        const uploadBody = new FormData()
-        uploadBody.append("image", selectedFile)
-
-        const uploadResponse = await fetch("/api/uploads/imgbb", {
-          method: "POST",
-          body: uploadBody,
-        })
-        const uploadData = (await uploadResponse.json().catch(() => null)) as
-          | { url?: string; error?: string }
-          | null
-
-        if (!uploadResponse.ok || !uploadData?.url) {
-          throw new Error(uploadData?.error || "Could not upload the image.")
-        }
-
-        imageValue = uploadData.url
-        setUploading(false)
-      } else if (imageMode === "url") {
-        imageValue = imageUrl.trim()
-      } else if (imageMode === "remove") {
-        imageValue = null
-      }
+      const image = imageFieldRef.current?.getImage()
 
       const response = await fetch("/api/profile", {
         method: "PATCH",
@@ -241,7 +118,7 @@ export function ProfileManager({ initialUser }: { initialUser: ProfileUser }) {
         body: JSON.stringify({
           name: form.name.trim(),
           phone: form.phone.trim(),
-          ...(imageValue !== undefined ? { image: imageValue } : {}),
+          ...(image?.changed ? { image: image.image } : {}),
         }),
       })
 
@@ -270,12 +147,11 @@ export function ProfileManager({ initialUser }: { initialUser: ProfileUser }) {
         userMessage(error, "Please try again.")
       )
     } finally {
-      setUploading(false)
       setSaving(false)
     }
   }
 
-  const busy = saving || uploading
+  const busy = saving
 
   return (
     <section
@@ -436,122 +312,13 @@ export function ProfileManager({ initialUser }: { initialUser: ProfileUser }) {
             </div>
           </div>
 
-          <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
-            <div className="flex items-center gap-2">
-              <ImageIcon className="size-4 text-lime-300" aria-hidden="true" />
-              <h3 className="text-sm font-semibold text-white">Profile picture</h3>
-            </div>
-
-            <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="Profile picture method">
-              {IMAGE_MODES.map((mode) => {
-                const Icon = mode.icon
-                const active = imageMode === mode.value
-                return (
-                  <button
-                    key={mode.value}
-                    type="button"
-                    disabled={busy}
-                    onClick={() => {
-                      setImageMode(mode.value)
-                      setPreviewFailed(false)
-                      setErrors((current) => ({ ...current, image: undefined }))
-                    }}
-                    className={cn(
-                      "inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-xs font-semibold transition-colors disabled:opacity-50",
-                      active
-                        ? "border-lime-400/40 bg-lime-400/15 text-lime-200"
-                        : "border-white/10 bg-white/[0.03] text-neutral-400 hover:border-white/20 hover:text-white"
-                    )}
-                  >
-                    <Icon className="size-3.5" aria-hidden="true" />
-                    {mode.label}
-                  </button>
-                )
-              })}
-            </div>
-
-            <div className="mt-4 flex flex-wrap items-center gap-4">
-              {previewSource && !previewFailed ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={previewSource}
-                  alt="Profile picture preview"
-                  onError={() => setPreviewFailed(true)}
-                  className="size-20 shrink-0 rounded-full border border-white/10 object-cover"
-                />
-              ) : (
-                <UserAvatar
-                  user={{ ...profile, image: null }}
-                  className="size-20 text-lg"
-                />
-              )}
-
-              <div className="min-w-0 flex-1 space-y-2">
-                {imageMode === "upload" ? (
-                  <>
-                    <input
-                      type="file"
-                      accept={ALLOWED_IMAGE_TYPES.join(",")}
-                      onChange={handleFileChange}
-                      disabled={busy}
-                      className="block w-full max-w-xs text-xs text-neutral-400 file:mr-3 file:cursor-pointer file:rounded-lg file:border file:border-white/10 file:bg-white/5 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-neutral-200 hover:file:bg-white/10"
-                    />
-                    <p className="text-xs text-neutral-500">
-                      JPG, PNG, WebP or GIF · up to 5 MB
-                    </p>
-                  </>
-                ) : imageMode === "url" ? (
-                  <>
-                    <Input
-                      type="url"
-                      value={imageUrl}
-                      disabled={busy}
-                      aria-label="Profile image URL"
-                      aria-invalid={Boolean(errors.image)}
-                      onChange={(event) => {
-                        setImageUrl(event.target.value)
-                        setPreviewFailed(false)
-                        setErrors((current) => ({ ...current, image: undefined }))
-                      }}
-                      className={fieldClass}
-                      placeholder="https://example.com/photo.jpg"
-                    />
-                    <p className="text-xs text-neutral-500">
-                      Paste a direct link to an image.
-                    </p>
-                  </>
-                ) : imageMode === "remove" ? (
-                  <p className="text-xs text-neutral-400">
-                    Your current picture will be removed and the default avatar
-                    will be shown.
-                  </p>
-                ) : (
-                  <p className="text-xs text-neutral-400">
-                    Keep your current profile picture unchanged.
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {errors.image ? (
-              <p className="mt-3 flex items-center gap-1.5 text-xs text-rose-300">
-                <AlertCircle className="size-3.5" aria-hidden="true" />
-                {errors.image}
-              </p>
-            ) : null}
-            {previewFailed ? (
-              <p className="mt-3 flex items-center gap-1.5 text-xs text-rose-300">
-                <AlertCircle className="size-3.5" aria-hidden="true" />
-                The image could not be loaded. Check the link or choose a file.
-              </p>
-            ) : null}
-            {uploading ? (
-              <p className="mt-3 flex items-center gap-2 text-xs text-lime-200">
-                <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
-                Uploading image...
-              </p>
-            ) : null}
-          </div>
+          <ProfileImageField
+            ref={imageFieldRef}
+            currentImage={profile.image}
+            name={form.name}
+            allowCurrent
+            disabled={busy}
+          />
 
           <div className="flex flex-col-reverse gap-3 border-t border-white/10 pt-5 sm:flex-row sm:justify-end">
             <Button
@@ -573,7 +340,7 @@ export function ProfileManager({ initialUser }: { initialUser: ProfileUser }) {
               ) : (
                 <Check className="size-4" aria-hidden="true" />
               )}
-              {uploading ? "Uploading..." : saving ? "Saving..." : "Save Changes"}
+              {saving ? "Saving..." : "Save Changes"}
             </Button>
           </div>
         </form>

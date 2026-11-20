@@ -40,13 +40,12 @@ import { authClient } from "@/lib/auth-client"
 import { notify, userMessage } from "@/lib/notify"
 import type { SubscriptionState } from "@/lib/subscription"
 import { cn } from "@/lib/utils"
+import { createTuition, createTuitionCount } from "@/lib/actions/tuition"
 import {
   CLASS_LEVEL_OPTIONS,
   DAYS_PER_WEEK_OPTIONS,
   SUBJECT_OPTIONS,
-  createTuition,
-  createTuitionCount,
-} from "@/lib/actions/tuition"
+} from "@/lib/tuitions/options"
 
 type FormValues = {
   title: string
@@ -342,7 +341,7 @@ export function PostTuitionForm() {
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
-    let createErrorHandled = false
+    let createStarted = false
 
     try {
       setIsSubmitting(true)
@@ -379,10 +378,8 @@ export function PostTuitionForm() {
       }
 
       const { data: session } = await authClient.getSession()
-      const token = session?.session.token
-      const tutorId = session?.user?.id
 
-      if (!token || !tutorId) {
+      if (!session?.user?.id) {
         notify.warning(
           "Session expired",
           "Please sign in again to post a tuition."
@@ -396,7 +393,7 @@ export function PostTuitionForm() {
       const access = await readSubscriptionState()
       if (access) setSubscription(access)
 
-      const countRes = await createTuitionCount(`tutorId=${tutorId}`, token)
+      const countRes = await createTuitionCount()
 
       if (!access?.isPro && countRes.count >= 2) {
         notify.info(
@@ -411,31 +408,28 @@ export function PostTuitionForm() {
       // local file name would leave the post without an image.
       const bannerImage = imageFile ? await uploadBannerImage(imageFile) : ""
 
+      createStarted = true
       await notify.promise(
-        createTuition(
-          {
-            ...values,
-            monthlyFee,
-            daysPerWeek,
-            bannerImage,
-          },
-          token
-        ),
+        createTuition({
+          ...values,
+          monthlyFee,
+          daysPerWeek,
+          bannerImage,
+        }),
         {
           loading: "Publishing your tuition...",
           success: "Created successfully!",
-          error: (error: unknown) => {
-            createErrorHandled = true
-            return userMessage(error, "Could not post this tuition.")
-          },
+          error: (error: unknown) => userMessage(error, "Could not post this tuition."),
         }
       )
 
       router.push("/dashboard/tutor/my-tuitions")
       router.refresh()
     } catch (error) {
-      // toast.promise already reported failures from the create request.
-      if (!createErrorHandled) {
+      // notify.promise already reports failures from the create request; only
+      // earlier steps (validation, subscription check, banner upload) need a
+      // separate notification.
+      if (!createStarted) {
         notify.error(
           "Could not post this tuition",
           userMessage(error, "Please try again.")
@@ -450,7 +444,7 @@ export function PostTuitionForm() {
     <div className="space-y-6">
       <PlanCard
         isPro={subscription?.isPro ?? false}
-        onUpgrade={() => router.push("/dashboard/profile#subscription")}
+        onUpgrade={() => router.push("/pricing")}
       />
 
       <form

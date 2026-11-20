@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, type FormEvent } from "react"
+import { useEffect, useRef, useState, type FormEvent } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 
@@ -12,6 +12,10 @@ import {
   GoogleButton,
   SubmitButton,
 } from "@/components/auth/auth-form"
+import {
+  ProfileImageField,
+  type ProfileImageFieldHandle,
+} from "@/components/profile/profile-image-field"
 
 import { authClient } from "@/lib/auth-client"
 import { notify } from "@/lib/notify"
@@ -21,6 +25,7 @@ type SignUpData = {
   email: string
   password: string
   role: string
+  image?: string
 }
 
 const ROLES = ["Student", "Tutor"] as const
@@ -30,7 +35,16 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 export default function SignUpPage() {
   const router = useRouter()
 
+  const [name, setName] = useState("")
   const [pending, setPending] = useState(false)
+  const imageFieldRef = useRef<ProfileImageFieldHandle>(null)
+  const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (redirectTimerRef.current) clearTimeout(redirectTimerRef.current)
+    }
+  }, [])
 
   async function handleSignUp(data: SignUpData) {
     setPending(true)
@@ -42,6 +56,8 @@ export default function SignUpPage() {
         password: data.password,
         // Custom field declared in lib/auth.ts (user.additionalFields).
         role: data.role,
+        // Saved with the account itself, so no follow-up request is needed.
+        image: data.image,
 
         // Callback URL
         callbackURL: "/",
@@ -55,11 +71,18 @@ export default function SignUpPage() {
         return
       }
 
+      // The navbar reads the shared session store. Force a fresh read so the
+      // picture saved during sign-up appears immediately.
+      await authClient
+        .getSession({ query: { disableCookieCache: true } })
+        .catch(() => null)
+      router.refresh()
+
       notify.success("Account created successfully!", {
         description: "Redirecting you home...",
       })
 
-      setTimeout(() => {
+      redirectTimerRef.current = setTimeout(() => {
         router.push("/")
         router.refresh()
       }, 1500)
@@ -107,11 +130,16 @@ export default function SignUpPage() {
       return
     }
 
+    if (imageFieldRef.current?.validate()) return
+
+    const image = imageFieldRef.current?.getImage()
+
     await handleSignUp({
       name: data.name.trim(),
       email: data.email.trim(),
       password: data.password,
       role: data.role,
+      image: image?.changed && image.image ? image.image : undefined,
     })
   }
 
@@ -140,6 +168,8 @@ export default function SignUpPage() {
           icon="user"
           placeholder="Jane Doe"
           autoComplete="name"
+          value={name}
+          onChange={(event) => setName(event.target.value)}
           required
         />
 
@@ -175,6 +205,12 @@ export default function SignUpPage() {
           autoComplete="new-password"
           required
           minLength={8}
+        />
+
+        <ProfileImageField
+          ref={imageFieldRef}
+          name={name || "User"}
+          disabled={pending}
         />
 
         <SubmitButton disabled={pending}>

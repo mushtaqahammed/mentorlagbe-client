@@ -41,7 +41,7 @@ import {
   type AdminTuitionStatusFilter,
   type AdminTuitionsResponse,
 } from "@/lib/admin/types"
-import { SUBJECT_OPTIONS } from "@/lib/actions/tuition"
+import { SUBJECT_OPTIONS } from "@/lib/tuitions/options"
 import { cn } from "@/lib/utils"
 
 type ApprovalDecision = "approved" | "rejected"

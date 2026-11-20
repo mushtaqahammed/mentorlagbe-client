@@ -220,6 +220,16 @@ export function MyApplications() {
     }
   }, [reloadKey])
 
+  useEffect(() => {
+    if (!deleteTarget) return
+
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape" && !busyId) setDeleteTarget(null)
+    }
+    window.addEventListener("keydown", onKeyDown)
+    return () => window.removeEventListener("keydown", onKeyDown)
+  }, [deleteTarget, busyId])
+
   function refresh() {
     showErrorStateRef.current = true
     setLoading(true)

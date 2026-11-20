@@ -15,6 +15,7 @@ import {
 import { authClient, signOut } from "@/lib/auth-client"
 import { notify, userMessage } from "@/lib/notify"
 import { Logo } from "@/components/logo"
+import { AvatarImage } from "@/components/profile/avatar-image"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
@@ -45,22 +46,13 @@ function RoleBadge({ role }: { role: string }) {
 }
 
 function UserAvatar({ image, name }: { image?: string | null; name: string }) {
-  const initials = name
-    .split(" ")
-    .map((part) => part[0])
-    .filter(Boolean)
-    .slice(0, 2)
-    .join("")
-    .toUpperCase()
-
   return (
     <span className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/10 bg-neutral-800 text-xs font-bold text-white ring-2 ring-white/5">
-      {image ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={image} alt={name} className="size-full object-cover" />
-      ) : (
-        initials || "U"
-      )}
+      <AvatarImage
+        src={image}
+        name={name}
+        className="size-full object-cover"
+      />
     </span>
   )
 }

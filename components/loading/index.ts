@@ -20,7 +20,6 @@ export {
   TuitionCardSkeleton,
   TuitionDetailLoader,
   TuitionsLoader,
-  UpdateProfileLoader,
 } from "./public-loaders"
 
 export {

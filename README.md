@@ -276,9 +276,11 @@ seeded posts appear immediately because those routes use `cache: "no-store"`.
 form (`components/dashboard/profile/profile-manager.tsx`). Updates go through
 `PATCH /api/profile`, which uses the Better Auth session and a strict whitelist
 (`name`, `phone`, `image`) — `role` and subscription fields can never be changed
-from the profile page. Image uploads reuse `POST /api/uploads/imgbb`; a direct
-http(s) image URL is also supported, as is removing the current picture. The
-`phone` field is declared in `user.additionalFields` in `lib/auth.ts`.
+from the profile page. The shared `components/profile/profile-image-field.tsx`
+provides the image URL field and preview used by both this page and the sign-up
+form; on sign-up the URL is saved directly with the account. Tuition banner
+uploads still use `POST /api/uploads/imgbb`. The `phone` field is declared in
+`user.additionalFields` in `lib/auth.ts`.
 
 ---
 
@@ -296,11 +298,11 @@ never used for authorization.
 
 On the frontend, `lib/core/server.ts` is the single server-side API helper:
 `getSession()` / `getToken()` read the session cookie and `authFetch(url, init)`
-attaches the Bearer token. Server actions in `lib/actions/applications.ts`, the
-admin/testimonial data helpers and the proxy routes all use it rather than
-duplicating token/fetch logic. Client components cannot use `next/headers`, so
-they continue to obtain the session token from the shared `authClient` and pass
-it to the client-side tuition actions only.
+attaches the Bearer token. All server actions (`lib/actions/applications.ts`
+and `lib/actions/tuition.ts`), the admin/testimonial data helpers and the proxy
+routes use it rather than duplicating token/fetch logic. Tuition constants and
+types live in `lib/tuitions/options.ts` so client components can import them
+without pulling server-only code into the browser bundle.
 
 ---
 

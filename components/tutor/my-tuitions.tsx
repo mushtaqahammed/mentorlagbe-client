@@ -32,18 +32,19 @@ import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { notify as uiNotify, userMessage } from "@/lib/notify"
 import {
-  CLASS_LEVEL_OPTIONS,
-  DAYS_PER_WEEK_OPTIONS,
-  SUBJECT_OPTIONS,
-  TUITION_MODES,
   deleteTuition,
   getMyTuitions,
   updateTuition,
   updateTuitionStatus,
+} from "@/lib/actions/tuition"
+import {
+  CLASS_LEVEL_OPTIONS,
+  DAYS_PER_WEEK_OPTIONS,
+  SUBJECT_OPTIONS,
+  TUITION_MODES,
   type TuitionInput,
   type TuitionRecord,
-} from "@/lib/actions/tuition"
-import { authClient } from "@/lib/auth-client"
+} from "@/lib/tuitions/options"
 import { cn } from "@/lib/utils"
 
 // The edit form keeps the numeric fields as strings while the user types;
@@ -70,19 +71,6 @@ function notify(
   if (variant === "success") uiNotify.success(title, options)
   else if (variant === "error") uiNotify.error(title, options)
   else uiNotify.info(title, options)
-}
-
-async function getAuth() {
-  const { data: session, error } = await authClient.getSession()
-
-  if (error || !session?.user?.id || !session.session.token) {
-    throw new Error("Please sign in again to manage your tuitions.")
-  }
-
-  return {
-    userId: session.user.id,
-    token: session.session.token,
-  }
 }
 
 function formatDate(value: string) {
@@ -168,6 +156,14 @@ function Modal({
   labelledBy: string
   className?: string
 }) {
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") onClose()
+    }
+    window.addEventListener("keydown", onKeyDown)
+    return () => window.removeEventListener("keydown", onKeyDown)
+  }, [onClose])
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
@@ -232,15 +228,18 @@ export function MyTuitions() {
   const [busyId, setBusyId] = useState<string | null>(null)
 
   useEffect(() => {
+    let active = true
+
     async function loadTuitions() {
       setLoading(true)
 
       try {
-        const { userId, token } = await getAuth()
-        const data = await getMyTuitions(userId, token)
+        const data = await getMyTuitions()
+        if (!active) return
         setTuitions(data)
         setLoadError("")
       } catch (error) {
+        if (!active) return
         const message =
           error instanceof Error
             ? error.message
@@ -248,11 +247,14 @@ export function MyTuitions() {
         setLoadError(message)
         notify("error", "Could not load tuitions", message)
       } finally {
-        setLoading(false)
+        if (active) setLoading(false)
       }
     }
 
     loadTuitions()
+    return () => {
+      active = false
+    }
   }, [refreshKey])
 
   function refresh() {
@@ -341,16 +343,11 @@ export function MyTuitions() {
         return
       }
 
-      const { token } = await getAuth()
-      await updateTuition(
-        editing.id,
-        {
-          ...editForm,
-          monthlyFee,
-          daysPerWeek,
-        },
-        token
-      )
+      await updateTuition(editing.id, {
+        ...editForm,
+        monthlyFee,
+        daysPerWeek,
+      })
 
       notify(
         "success",
@@ -371,9 +368,8 @@ export function MyTuitions() {
     setBusyId(tuition.id)
 
     try {
-      const { token } = await getAuth()
       const nextStatus = tuition.status === "Active" ? "Closed" : "Active"
-      await updateTuitionStatus(tuition.id, nextStatus, token)
+      await updateTuitionStatus(tuition.id, nextStatus)
 
       notify(
         "success",
@@ -394,8 +390,7 @@ export function MyTuitions() {
     setDeleting(true)
 
     try {
-      const { token } = await getAuth()
-      await deleteTuition(tuitionToDelete.id, token)
+      await deleteTuition(tuitionToDelete.id)
 
       notify(
         "success",

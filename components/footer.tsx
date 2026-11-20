@@ -7,7 +7,6 @@ const quickLinks = [
   { href: "/tuitions", label: "Browse Tuitions" },
   { href: "/pricing", label: "Pricing" },
   { href: "/how-it-works", label: "How It Works" },
-  { href: "/about", label: "About" },
 ]
 
 const contactInfo = [

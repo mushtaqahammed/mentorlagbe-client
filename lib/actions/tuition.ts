@@ -1,78 +1,23 @@
+"use server"
+
+import { authFetch, getSession } from "@/lib/core/server"
+import type {
+  TuitionInput,
+  TuitionRecord,
+  TutorStats,
+} from "@/lib/tuitions/options"
+
 import type { ApplicationDetails } from "./applications"
 
-export const SUBJECT_OPTIONS = [
-  "Mathematics",
-  "Physics",
-  "Chemistry",
-  "Biology",
-  "English",
-  "Bangla",
-  "ICT",
-  "Accounting",
-  "General Science",
-  "Higher Mathematics",
-  "Economics",
-  "Statistics",
-  "Other",
-]
+const BASE_URL = process.env.BACKEND_API_URL || "http://localhost:5000"
 
-export const CLASS_LEVEL_OPTIONS = [
-  "Play",
-  "Nursery",
-  "KG",
-  "Class 1–10",
-  "SSC",
-  "HSC",
-  "Admission",
-  "University",
-]
-
-export const TUITION_MODES = ["Offline", "Online", "Both"]
-
-export const DAYS_PER_WEEK_OPTIONS = [2, 3, 4, 5, 6, 7]
-
-export type TuitionInput = {
-  title: string
-  subject: string
-  classLevel: string
-  mode: string
-  location: string
-  monthlyFee: number
-  daysPerWeek: number
-  description: string
-  bannerImage: string
+async function parseError(res: Response, fallback: string) {
+  const data = await res.json().catch(() => null)
+  throw new Error(data?.error || fallback)
 }
 
-export type TuitionRecord = TuitionInput & {
-  id: string
-  tutorId: string
-  approvalStatus: "Pending" | "Approved" | "Rejected"
-  status: "Active" | "Closed"
-  createdAt: string
-  updatedAt?: string | null
-}
-
-export type PlanUsage = {
-  plan: "free" | "pro"
-  used: number
-  limit: number | null
-  remaining: number | null
-  unlimited: boolean
-}
-
-// These helpers also run inside client components, where only NEXT_PUBLIC_*
-// variables are inlined into the bundle. Without the public variant the browser
-// would silently fall back to localhost instead of the deployed backend.
-const BASE_URL =
-  process.env.NEXT_PUBLIC_BACKEND_API_URL ||
-  process.env.BACKEND_API_URL ||
-  "http://localhost:5000"
-
-function authHeaders(token: string) {
-  return {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${token}`,
-  }
+function jsonHeaders() {
+  return { "Content-Type": "application/json" }
 }
 
 function asString(value: unknown, fallback = "") {
@@ -168,138 +113,97 @@ function normalizeTuitionRecords(value: unknown): TuitionRecord[] {
   return [...byId.values()]
 }
 
-export const createTuition = async (
-  tuitionData: TuitionInput,
-  token: string
-) => {
-  const res = await fetch(`${BASE_URL}/tuitions`, {
+export const createTuition = async (tuitionData: TuitionInput) => {
+  const res = await authFetch(`${BASE_URL}/tuitions`, {
     method: "POST",
-    headers: authHeaders(token),
+    headers: jsonHeaders(),
     body: JSON.stringify(tuitionData),
   })
 
-  if (!res.ok) {
-    const data = await res.json().catch(() => null)
-    throw new Error(data?.error || "Could not post this tuition.")
-  }
-
+  if (!res.ok) await parseError(res, "Could not post this tuition.")
   return res.json()
 }
 
-export const createTuitionCount = async (
-  query: string,
-  token: string
-): Promise<{ count: number }> => {
-  const res = await fetch(`${BASE_URL}/tuitions/count?${query}`, {
-    headers: authHeaders(token),
-    cache: "no-store",
-  })
+export const createTuitionCount = async (): Promise<{ count: number }> => {
+  // The backend derives the tutor from the verified token, so no query is
+  // needed (and a client-supplied tutorId must not be trusted).
+  const res = await authFetch(`${BASE_URL}/tuitions/count`)
 
-  if (!res.ok) {
-    throw new Error("Could not check your tuition post limit.")
-  }
-
+  if (!res.ok) await parseError(res, "Could not check your tuition post limit.")
   return res.json()
 }
 
-export const getMyTuitions = async (
-  userId: string,
-  token: string
-): Promise<TuitionRecord[]> => {
-  const res = await fetch(
-    `${BASE_URL}/tuitions?tutorId=${encodeURIComponent(userId)}`,
-    {
-      headers: authHeaders(token),
-      cache: "no-store",
-    }
-  )
+export const getMyTuitions = async (): Promise<TuitionRecord[]> => {
+  const res = await authFetch(`${BASE_URL}/tuitions`)
 
-  if (!res.ok) throw new Error("Could not load your tuitions.")
+  if (!res.ok) await parseError(res, "Could not load your tuitions.")
 
-  const data: unknown = await res.json()
+  const session = await getSession()
+  const userId = session?.user?.id
 
-  // Defence in depth: older backend versions ignore the tutorId query and
-  // return every tuition, so never trust the response to be scoped.
-  return normalizeTuitionRecords(data).filter(
-    (tuition) => tuition.tutorId === userId
+  // Defence in depth: never display a post that is not owned by this user.
+  return normalizeTuitionRecords(await res.json()).filter(
+    (tuition) => !userId || tuition.tutorId === userId
   )
 }
 
-export const updateTuition = async (
-  id: string,
-  tuitionData: TuitionInput,
-  token: string
-) => {
-  const res = await fetch(`${BASE_URL}/tuitions/${id}`, {
+export const updateTuition = async (id: string, tuitionData: TuitionInput) => {
+  const res = await authFetch(`${BASE_URL}/tuitions/${encodeURIComponent(id)}`, {
     method: "PUT",
-    headers: authHeaders(token),
+    headers: jsonHeaders(),
     body: JSON.stringify(tuitionData),
   })
 
-  if (!res.ok) throw new Error("Could not update this tuition.")
+  if (!res.ok) await parseError(res, "Could not update this tuition.")
   return res.json()
 }
 
 export const updateTuitionStatus = async (
   id: string,
-  status: "Active" | "Closed",
-  token: string
+  status: "Active" | "Closed"
 ) => {
-  const res = await fetch(`${BASE_URL}/tuitions/${id}/status`, {
-    method: "PATCH",
-    headers: authHeaders(token),
-    body: JSON.stringify({ status }),
-  })
+  const res = await authFetch(
+    `${BASE_URL}/tuitions/${encodeURIComponent(id)}/status`,
+    {
+      method: "PATCH",
+      headers: jsonHeaders(),
+      body: JSON.stringify({ status }),
+    }
+  )
 
-  if (!res.ok) throw new Error("Could not change this tuition status.")
+  if (!res.ok) await parseError(res, "Could not change this tuition status.")
   return res.json()
 }
 
-export const deleteTuition = async (id: string, token: string) => {
-  const res = await fetch(`${BASE_URL}/tuitions/${id}`, {
+export const deleteTuition = async (id: string) => {
+  const res = await authFetch(`${BASE_URL}/tuitions/${encodeURIComponent(id)}`, {
     method: "DELETE",
-    headers: authHeaders(token),
   })
 
-  if (!res.ok) throw new Error("Could not delete this tuition.")
+  if (!res.ok) await parseError(res, "Could not delete this tuition.")
   return res.json()
 }
 
-export type TutorStats = {
-  totalTuitions: number
-  activeApprovedTuitions: number
-  totalApplicants: number
-  plan: string
-}
+export const getTutorStats = async (): Promise<TutorStats> => {
+  const res = await authFetch(`${BASE_URL}/tutor-stats`)
 
-export const getTutorStats = async (token: string): Promise<TutorStats> => {
-  const res = await fetch(`${BASE_URL}/tutor-stats`, {
-    headers: authHeaders(token),
-    cache: "no-store",
-  })
-
-  if (!res.ok) throw new Error("Could not load your dashboard statistics.")
+  if (!res.ok) await parseError(res, "Could not load your dashboard statistics.")
   return res.json()
 }
 
 export const applyForTuition = async (
   id: string,
-  token: string,
   details?: ApplicationDetails
 ) => {
-  const res = await fetch(
+  const res = await authFetch(
     `${BASE_URL}/tuitions/${encodeURIComponent(id)}/apply`,
     {
       method: "POST",
-      headers: authHeaders(token),
+      headers: jsonHeaders(),
       body: JSON.stringify(details ?? {}),
     }
   )
 
-  if (!res.ok) {
-    const data = await res.json().catch(() => null)
-    throw new Error(data?.error || "Could not submit your application.")
-  }
-
+  if (!res.ok) await parseError(res, "Could not submit your application.")
   return res.json()
 }
