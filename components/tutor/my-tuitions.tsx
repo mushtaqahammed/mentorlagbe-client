@@ -53,7 +53,12 @@ import {
 import { authClient } from "@/lib/auth-client"
 import { cn } from "@/lib/utils"
 
-type EditForm = TuitionInput
+// The edit form keeps the numeric fields as strings while the user types;
+// they are parsed back to numbers on submit.
+type EditForm = Omit<TuitionInput, "monthlyFee" | "daysPerWeek"> & {
+  monthlyFee: string
+  daysPerWeek: string
+}
 
 type SetToasts = Dispatch<SetStateAction<ToastItem[]>>
 
@@ -104,6 +109,12 @@ function formatDate(value: string) {
 
 function formatFee(value: number) {
   return `৳ ${Number(value || 0).toLocaleString("en-BD")}`
+}
+
+/** The fee field is free text, so strip currency symbols before parsing. */
+function parseAmount(value: string) {
+  const numeric = Number(value.replace(/[^0-9.]/g, ""))
+  return Number.isFinite(numeric) ? numeric : NaN
 }
 
 function SelectChevron() {
@@ -298,14 +309,17 @@ export function MyTuitions() {
       classLevel: tuition.classLevel,
       mode: tuition.mode,
       location: tuition.location,
-      monthlyFee: Number(tuition.monthlyFee),
-      daysPerWeek: Number(tuition.daysPerWeek),
+      monthlyFee: String(tuition.monthlyFee ?? ""),
+      daysPerWeek: String(tuition.daysPerWeek ?? ""),
       description: tuition.description,
       bannerImage: tuition.bannerImage,
     })
   }
 
-  function updateEditField(field: keyof EditForm, value: string) {
+  function updateEditField<K extends keyof EditForm>(
+    field: K,
+    value: EditForm[K]
+  ) {
     setEditForm((current) =>
       current ? { ...current, [field]: value } : current
     )
@@ -318,13 +332,36 @@ export function MyTuitions() {
     setSaving(true)
 
     try {
+      const monthlyFee = parseAmount(editForm.monthlyFee)
+      const daysPerWeek = Number(editForm.daysPerWeek)
+
+      if (!Number.isFinite(monthlyFee) || monthlyFee <= 0) {
+        notify(
+          setToasts,
+          "error",
+          "Invalid monthly fee",
+          "Enter a valid amount, for example 5000."
+        )
+        return
+      }
+
+      if (!Number.isFinite(daysPerWeek) || daysPerWeek < 1) {
+        notify(
+          setToasts,
+          "error",
+          "Invalid days per week",
+          "Select how many days per week you can teach."
+        )
+        return
+      }
+
       const { token } = await getAuth()
       await updateTuition(
         editing.id,
         {
           ...editForm,
-          monthlyFee: Number(editForm.monthlyFee),
-          daysPerWeek: Number(editForm.daysPerWeek),
+          monthlyFee,
+          daysPerWeek,
         },
         token
       )

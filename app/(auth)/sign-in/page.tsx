@@ -30,21 +30,16 @@ export default function SignInPage() {
     setError(null)
 
     try {
-      const { data: signInResponse, error: signInError } =
-        await authClient.signIn.email({
-          email: data.email,
-          password: data.password,
-          callbackURL: "/",
-        })
+      const { error: signInError } = await authClient.signIn.email({
+        email: data.email,
+        password: data.password,
+        callbackURL: "/",
+      })
 
       if (signInError) {
         setError(signInError.message ?? "Invalid email or password.")
         return
       }
-
-      console.log("Sign-in successful:", {
-        user: signInResponse?.user?.email,
-      })
 
       router.push("/")
       router.refresh()

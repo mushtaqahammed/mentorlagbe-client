@@ -67,6 +67,24 @@ export const auth = betterAuth({
     },
   },
 
+  // Public sign-up may only create Student or Tutor accounts. The role sent by
+  // the client is sanitised here because `input: true` would otherwise let
+  // anyone register as an Admin and reach the /api/admin/* routes. Admin
+  // accounts must be promoted by an existing admin (or directly in the DB).
+  databaseHooks: {
+    user: {
+      create: {
+        before: async (user) => {
+          const requested =
+            typeof user.role === "string" ? user.role.trim().toLowerCase() : ""
+          const role = requested === "tutor" ? "Tutor" : "Student"
+
+          return { data: { ...user, role } }
+        },
+      },
+    },
+  },
+
   socialProviders: {
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID as string,

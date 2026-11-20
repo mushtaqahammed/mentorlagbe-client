@@ -1,7 +1,6 @@
 import {
   BookOpen,
   CreditCard,
-  Crown,
   FileText,
   LayoutDashboard,
   PlusCircle,

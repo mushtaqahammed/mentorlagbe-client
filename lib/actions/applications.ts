@@ -55,7 +55,13 @@ export type StudentApplicationsResponse = {
   stats: ApplicantStats
 }
 
-const BASE_URL = process.env.BACKEND_API_URL || "http://localhost:5000"
+// These helpers also run inside client components, where only NEXT_PUBLIC_*
+// variables are inlined into the bundle. Without the public variant the browser
+// would silently fall back to localhost instead of the deployed backend.
+const BASE_URL =
+  process.env.NEXT_PUBLIC_BACKEND_API_URL ||
+  process.env.BACKEND_API_URL ||
+  "http://localhost:5000"
 
 function authHeaders(token: string) {
   return {

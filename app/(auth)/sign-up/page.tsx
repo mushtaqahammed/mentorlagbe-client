@@ -22,7 +22,7 @@ type SignUpData = {
   role: string
 }
 
-const ROLES = ["Student", "Tutor", "Admin"] as const
+const ROLES = ["Student", "Tutor"] as const
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -98,16 +98,9 @@ export default function SignUpPage() {
     }
 
     if (!data.role || !ROLES.includes(data.role as (typeof ROLES)[number])) {
-      setError("Please select whether you are a Student, Tutor, or Admin.")
+      setError("Please select whether you are a Student or a Tutor.")
       return
     }
-
-    console.log("Sign-up form data:", {
-      name: data.name.trim(),
-      email: data.email.trim(),
-      role: data.role,
-      password: "[REDACTED]",
-    })
 
     await handleSignUp({
       name: data.name.trim(),
@@ -165,7 +158,6 @@ export default function SignUpPage() {
         >
           <option value="Student">Student</option>
           <option value="Tutor">Tutor</option>
-          <option value="Admin">Admin</option>
         </AuthSelect>
 
         <AuthInput
@@ -199,7 +191,11 @@ export default function SignUpPage() {
 
       <Divider />
 
-      <GoogleButton onClick={() => console.log("Google sign-up clicked")} />
+      <GoogleButton
+        onClick={() =>
+          authClient.signIn.social({ provider: "google", callbackURL: "/" })
+        }
+      />
     </AuthShell>
   )
 }

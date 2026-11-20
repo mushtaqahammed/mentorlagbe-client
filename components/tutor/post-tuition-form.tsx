@@ -100,6 +100,37 @@ const controlClasses =
 const selectClasses = cn(controlClasses, "appearance-none pr-10")
 const labelClasses = "text-sm font-medium text-neutral-200"
 
+const MAX_BANNER_BYTES = 5 * 1024 * 1024
+
+async function uploadBannerImage(file: File) {
+  const body = new FormData()
+  body.append("image", file)
+
+  const response = await fetch("/api/uploads/imgbb", {
+    method: "POST",
+    body,
+  })
+
+  const data = (await response.json().catch(() => null)) as
+    | { url?: string; error?: string }
+    | null
+
+  if (!response.ok || !data?.url) {
+    throw new Error(data?.error || "Could not upload the banner image.")
+  }
+
+  return data.url
+}
+
+/**
+ * The fee input is free text (the placeholder shows "৳ 5000"), so strip
+ * currency symbols and separators before converting it to a number.
+ */
+function parseAmount(value: string) {
+  const numeric = Number(value.replace(/[^0-9.]/g, ""))
+  return Number.isFinite(numeric) ? numeric : NaN
+}
+
 async function readSubscriptionState(): Promise<SubscriptionState | null> {
   try {
     const response = await fetch("/api/subscription/status", {
@@ -268,6 +299,17 @@ export function PostTuitionForm() {
   }, [])
 
   const handleSelectedFile = useCallback((file: File) => {
+    if (!file.type.startsWith("image/")) {
+      setSubmitError("Please choose an image file (JPG, PNG, WebP, or GIF).")
+      return
+    }
+
+    if (file.size > MAX_BANNER_BYTES) {
+      setSubmitError("Banner images must be 5 MB or smaller.")
+      return
+    }
+
+    setSubmitError("")
     if (previewRef.current) URL.revokeObjectURL(previewRef.current)
     const objectUrl = URL.createObjectURL(file)
     previewRef.current = objectUrl
@@ -301,6 +343,31 @@ export function PostTuitionForm() {
       setIsSubmitting(true)
       setSubmitError("")
 
+      if (
+        !values.title.trim() ||
+        !values.subject ||
+        !values.classLevel ||
+        !values.mode ||
+        !values.location.trim() ||
+        !values.description.trim()
+      ) {
+        setSubmitError("Please fill in every field before submitting.")
+        return
+      }
+
+      const monthlyFee = parseAmount(values.monthlyFee)
+      const daysPerWeek = Number(values.daysPerWeek)
+
+      if (!Number.isFinite(monthlyFee) || monthlyFee <= 0) {
+        setSubmitError("Enter a valid monthly fee.")
+        return
+      }
+
+      if (!Number.isFinite(daysPerWeek) || daysPerWeek < 1) {
+        setSubmitError("Select how many days per week you can teach.")
+        return
+      }
+
       const { data: session } = await authClient.getSession()
       const token = session?.session.token
       const tutorId = session?.user?.id
@@ -323,12 +390,16 @@ export function PostTuitionForm() {
         return
       }
 
+      // Upload the banner first: the backend stores a URL, so sending only the
+      // local file name would leave the post without an image.
+      const bannerImage = imageFile ? await uploadBannerImage(imageFile) : ""
+
       await createTuition(
         {
           ...values,
-          monthlyFee: Number(values.monthlyFee),
-          daysPerWeek: Number(values.daysPerWeek),
-          bannerImage: imageFile?.name ?? "",
+          monthlyFee,
+          daysPerWeek,
+          bannerImage,
         },
         token
       )
