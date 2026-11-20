@@ -1,17 +1,12 @@
-import { ObjectId, type Document, type Filter } from "mongodb"
 import type Stripe from "stripe"
 
-import { database } from "@/lib/auth"
+import { backendRequest, userHeaders } from "@/lib/backend-api"
 import { getPlanById, getPlanForRole, type PlanId } from "@/lib/plans"
 import {
   isStripePermissionError,
   stripe,
   stripePermissionMessage,
 } from "@/lib/stripe"
-
-const USERS_COLLECTION = "user"
-const SUBSCRIPTIONS_COLLECTION = "subscriptions"
-const PAYMENTS_COLLECTION = "payments"
 
 const ACTIVE_SUBSCRIPTION_STATUSES = new Set(["active", "trialing"])
 const PAID_CHECKOUT_STATUSES = new Set(["paid", "no_payment_required"])
@@ -54,6 +49,34 @@ const FREE_STATE: SubscriptionState = {
   currentPeriodEnd: null,
 }
 
+type InternalUser = {
+  id: string
+  role: string
+  name: string
+  email: string
+}
+
+type ExistingSubscription = {
+  userId: string
+  isPro: boolean
+  status: string
+  stripeSubscriptionId: string
+  stripeCustomerId: string
+  currentPeriodStart: string | null
+  currentPeriodEnd: string | null
+}
+
+type GrantInput = {
+  userId: string
+  planId: PlanId
+  status: string
+  stripeSessionId: string
+  stripeSubscriptionId: string
+  stripeCustomerId: string
+  currentPeriodStart: Date | null
+  currentPeriodEnd: Date | null
+}
+
 function asString(value: unknown, fallback = "") {
   if (typeof value === "string") return value
   if (typeof value === "number" || typeof value === "boolean") {
@@ -70,29 +93,20 @@ function extractId(value: unknown) {
   return ""
 }
 
-function toObjectId(userId: string) {
-  return /^[a-f\d]{24}$/i.test(userId) && ObjectId.isValid(userId)
-    ? new ObjectId(userId)
-    : null
-}
-
-function userFilter(userId: string): Filter<Document> {
-  const id = toObjectId(userId)
-  return { _id: id ?? userId } as Filter<Document>
+function dateFromApi(value: unknown) {
+  if (typeof value !== "string" && !(value instanceof Date)) return null
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? null : date
 }
 
 function isActiveStatus(status: string) {
   return ACTIVE_SUBSCRIPTION_STATUSES.has(status.toLowerCase())
 }
 
-function toIsoDate(value: unknown) {
-  return value instanceof Date ? value.toISOString() : null
-}
-
-async function findUser(userId: string) {
-  return database.collection(USERS_COLLECTION).findOne(userFilter(userId), {
-    projection: { role: 1, name: 1, email: 1 },
-  })
+async function findUser(userId: string): Promise<InternalUser | null> {
+  return backendRequest<InternalUser | null>(
+    `/internal/users/${encodeURIComponent(userId)}`
+  )
 }
 
 function subscriptionMatchesPlan(
@@ -111,8 +125,6 @@ function subscriptionMatchesPlan(
 }
 
 function getSubscriptionPeriod(subscription: Stripe.Subscription) {
-  // Stripe moved the billing period onto subscription items. Fall back to the
-  // subscription start date for the start of the first period.
   const item = subscription.items?.data?.[0]
   const start = item?.current_period_start ?? subscription.start_date
   const end = item?.current_period_end
@@ -160,32 +172,9 @@ function stripeErrorResult(
 }
 
 /**
- * Records the paid Checkout Session once. The unique index on
- * `stripeSessionId` makes retries (success page + webhook) idempotent.
+ * Records the paid Checkout Session once through the backend. The backend's
+ * unique index on `stripeSessionId` makes retries idempotent.
  */
-let paymentsIndexPromise: Promise<void> | null = null
-
-function ensurePaymentsIndex() {
-  if (!paymentsIndexPromise) {
-    paymentsIndexPromise = database
-      .collection(PAYMENTS_COLLECTION)
-      .createIndex(
-        { stripeSessionId: 1 },
-        {
-          name: "stripeSessionId_unique",
-          unique: true,
-          partialFilterExpression: { stripeSessionId: { $type: "string" } },
-        }
-      )
-      .then(() => undefined)
-      .catch((error) => {
-        console.error("Could not create the payments unique index:", error)
-      })
-  }
-
-  return paymentsIndexPromise
-}
-
 async function recordSubscriptionPayment({
   userId,
   userEmail,
@@ -217,54 +206,27 @@ async function recordSubscriptionPayment({
 }) {
   if (!stripeSessionId) return
 
-  await ensurePaymentsIndex()
-
-  const now = new Date()
-  const fallbackAmountMinor = (getPlanById(planId)?.price ?? 0) * 100
-  const safeAmountMinor =
-    Number.isFinite(amountMinor) && amountMinor >= 0
-      ? Math.round(amountMinor)
-      : fallbackAmountMinor
-
   try {
-    await database.collection(PAYMENTS_COLLECTION).updateOne(
-      { stripeSessionId },
-      {
-        $setOnInsert: {
-          userId,
-          userEmail,
-          userRole,
-          planId,
-          planName,
-          // The admin revenue aggregation reads `amount` in major units unless
-          // `amountInMinorUnits` is true, so both forms are stored explicitly.
-          amount: safeAmountMinor / 100,
-          amountMinor: safeAmountMinor,
-          amountInMinorUnits: false,
-          currency: currency.toUpperCase(),
-          status: paymentStatus,
-          paymentStatus,
-          provider: "stripe",
-          mode: "subscription",
-          type: "subscription",
-          stripeSessionId,
-          stripeSubscriptionId,
-          stripeCustomerId,
-          currentPeriodStart,
-          currentPeriodEnd,
-          paidAt: now,
-          createdAt: now,
-        },
-      },
-      { upsert: true }
-    )
+    await backendRequest("/internal/payments", {
+      method: "POST",
+      body: JSON.stringify({
+        userId,
+        userEmail,
+        userRole,
+        planId,
+        planName,
+        amountMinor,
+        currency,
+        paymentStatus,
+        stripeSessionId,
+        stripeSubscriptionId,
+        stripeCustomerId,
+        currentPeriodStart: currentPeriodStart?.toISOString() ?? null,
+        currentPeriodEnd: currentPeriodEnd?.toISOString() ?? null,
+      }),
+    })
   } catch (error) {
-    // A concurrent confirm/webhook request may have inserted the same session
-    // first; that is the expected idempotent outcome.
-    if ((error as { code?: unknown } | null)?.code === 11000) return
-
-    // The payment record is bookkeeping. A failed insert must not revoke an
-    // already verified Stripe subscription.
+    // Payment bookkeeping must not revoke an already verified subscription.
     console.error("Could not record the Stripe payment:", error)
   }
 }
@@ -273,98 +235,27 @@ async function recordSubscriptionPayment({
 export async function getSubscriptionState(
   userId: string
 ): Promise<SubscriptionState> {
-  const record = await database
-    .collection(SUBSCRIPTIONS_COLLECTION)
-    .findOne({ userId }, { sort: { updatedAt: -1 } })
-
-  if (!record) return FREE_STATE
-
-  const status = asString(record.status, "none")
-  const isPro = record.isPro === true && isActiveStatus(status)
-  const planId = getPlanById(asString(record.planId))?.id ?? null
-
-  if (!isPro) return { ...FREE_STATE, status }
-
-  return {
-    plan: "pro",
-    isPro: true,
-    status,
-    planId,
-    stripeSubscriptionId: asString(record.stripeSubscriptionId) || null,
-    stripeCustomerId: asString(record.stripeCustomerId) || null,
-    currentPeriodStart: toIsoDate(record.currentPeriodStart),
-    currentPeriodEnd: toIsoDate(record.currentPeriodEnd),
-  }
+  return backendRequest<SubscriptionState>("/internal/subscription-state", {
+    headers: userHeaders(userId),
+  })
 }
 
-async function persistProGrant({
-  userId,
-  planId,
-  status,
-  stripeSessionId,
-  stripeSubscriptionId,
-  stripeCustomerId,
-  currentPeriodStart,
-  currentPeriodEnd,
-}: {
-  userId: string
-  planId: PlanId
-  status: string
-  stripeSessionId: string
-  stripeSubscriptionId: string
-  stripeCustomerId: string
-  currentPeriodStart: Date | null
-  currentPeriodEnd: Date | null
-}) {
-  const now = new Date()
-  const nowIso = now.toISOString()
-
-  const subscriptionSet: Document = {
-    userId,
-    planId,
-    isPro: true,
-    status,
-    stripeSubscriptionId,
-    currentPeriodStart,
-    currentPeriodEnd,
-    updatedAt: now,
-  }
-  if (stripeSessionId) subscriptionSet.stripeSessionId = stripeSessionId
-  if (stripeCustomerId) subscriptionSet.stripeCustomerId = stripeCustomerId
-
-  const userSet: Document = {
-    plan: "pro",
-    subscriptionStatus: status,
-    proPlanId: planId,
-    stripeSubscriptionId,
-    subscriptionStartDate: currentPeriodStart?.toISOString() ?? null,
-    subscriptionEndDate: currentPeriodEnd?.toISOString() ?? null,
-    // Preserve the original activation date across retries. Cancellation
-    // clears it, so a later re-subscription gets a fresh date.
-    proActivatedAt: { $ifNull: ["$proActivatedAt", nowIso] },
-  }
-  if (stripeCustomerId) userSet.stripeCustomerId = stripeCustomerId
-
-  await Promise.all([
-    database.collection(SUBSCRIPTIONS_COLLECTION).updateOne(
-      { userId },
-      [
-        {
-          $set: {
-            ...subscriptionSet,
-            createdAt: { $ifNull: ["$createdAt", now] },
-            activatedAt: { $ifNull: ["$activatedAt", now] },
-          },
-        },
-      ],
-      { upsert: true }
-    ),
-    database
-      .collection(USERS_COLLECTION)
-      .updateOne(userFilter(userId), [{ $set: userSet }]),
-  ])
-
-  return getSubscriptionState(userId)
+async function persistProGrant(input: GrantInput): Promise<SubscriptionState> {
+  return backendRequest<SubscriptionState>("/internal/subscriptions/apply", {
+    method: "POST",
+    headers: userHeaders(input.userId),
+    body: JSON.stringify({
+      mode: "grant",
+      userId: input.userId,
+      planId: input.planId,
+      status: input.status,
+      stripeSessionId: input.stripeSessionId,
+      stripeSubscriptionId: input.stripeSubscriptionId,
+      stripeCustomerId: input.stripeCustomerId,
+      currentPeriodStart: input.currentPeriodStart?.toISOString() ?? null,
+      currentPeriodEnd: input.currentPeriodEnd?.toISOString() ?? null,
+    }),
+  })
 }
 
 async function markSubscriptionInactive(
@@ -372,53 +263,22 @@ async function markSubscriptionInactive(
   status: string,
   stripeSubscriptionId = ""
 ) {
-  const now = new Date()
-
-  const subscriptionSet: Document = {
-    isPro: false,
-    status,
-    updatedAt: now,
-  }
-  if (stripeSubscriptionId) {
-    subscriptionSet.stripeSubscriptionId = stripeSubscriptionId
-  }
-
-  const userSet: Document = {
-    plan: "free",
-    subscriptionStatus: status,
-  }
-  if (stripeSubscriptionId) {
-    userSet.stripeSubscriptionId = stripeSubscriptionId
-  }
-
-  await Promise.all([
-    database
-      .collection(SUBSCRIPTIONS_COLLECTION)
-      .updateOne(
-        { userId },
-        [{ $set: subscriptionSet }, { $unset: ["activatedAt"] }],
-        { upsert: true }
-      ),
-    database.collection(USERS_COLLECTION).updateOne(userFilter(userId), [
-      { $set: userSet },
-      {
-        $unset: [
-          "proPlanId",
-          "proActivatedAt",
-          "subscriptionStartDate",
-          "subscriptionEndDate",
-        ],
-      },
-    ]),
-  ])
-
-  return getSubscriptionState(userId)
+  return backendRequest<SubscriptionState>("/internal/subscriptions/apply", {
+    method: "POST",
+    headers: userHeaders(userId),
+    body: JSON.stringify({
+      mode: "inactive",
+      userId,
+      status,
+      stripeSubscriptionId,
+    }),
+  })
 }
 
 /**
  * Verifies a completed Stripe Checkout Session directly with Stripe, then
- * grants Pro access. This is the single write path used by both the success
- * page and the webhook, so no UI can grant access on its own.
+ * asks the backend to grant Pro access. This is the single write path used by
+ * both the success page and the webhook.
  */
 export async function verifyAndGrantProFromCheckoutSession(
   sessionId: string,
@@ -440,10 +300,6 @@ export async function verifyAndGrantProFromCheckoutSession(
 
   let checkoutSession: Stripe.Checkout.Session
   try {
-    // Do not expand the subscription here. Expanding requires the same
-    // Subscriptions Read permission as retrieving it separately, but it makes
-    // the whole Checkout Session request fail. Reading them separately lets us
-    // report the missing permission precisely.
     checkoutSession = await stripe.checkout.sessions.retrieve(trimmedSessionId)
   } catch (error) {
     return stripeErrorResult(error, "Checkout Session")
@@ -482,7 +338,6 @@ export async function verifyAndGrantProFromCheckoutSession(
     }
   }
 
-  // Only the signed-in account that started this Checkout Session may use it.
   if (expectedUserId && userId !== expectedUserId) {
     return {
       ok: false,
@@ -491,11 +346,14 @@ export async function verifyAndGrantProFromCheckoutSession(
     }
   }
 
+  const sessionParams = new URLSearchParams({
+    stripeSessionId: checkoutSession.id,
+  })
   const [user, existingRecord] = await Promise.all([
     findUser(userId),
-    database
-      .collection(SUBSCRIPTIONS_COLLECTION)
-      .findOne({ stripeSessionId: checkoutSession.id }),
+    backendRequest<ExistingSubscription | null>(
+      `/internal/subscription-by-session?${sessionParams}`
+    ),
   ])
 
   if (!user) {
@@ -529,8 +387,6 @@ export async function verifyAndGrantProFromCheckoutSession(
   const customerId = extractId(checkoutSession.customer)
   const userEmail = asString(user.email)
 
-  // Retrying the success page (or the webhook arriving twice) must not create
-  // another payment record or re-activate an already active subscription.
   if (existingRecord) {
     if (asString(existingRecord.userId) !== userId) {
       return {
@@ -546,7 +402,6 @@ export async function verifyAndGrantProFromCheckoutSession(
     ) {
       const state = await getSubscriptionState(userId)
       if (state.isPro) {
-        // Heal a missing payment record without activating anything again.
         await recordSubscriptionPayment({
           userId,
           userEmail,
@@ -562,8 +417,8 @@ export async function verifyAndGrantProFromCheckoutSession(
             extractId(checkoutSession.subscription),
           stripeCustomerId:
             asString(existingRecord.stripeCustomerId) || customerId,
-          currentPeriodStart: existingRecord.currentPeriodStart ?? null,
-          currentPeriodEnd: existingRecord.currentPeriodEnd ?? null,
+          currentPeriodStart: dateFromApi(existingRecord.currentPeriodStart),
+          currentPeriodEnd: dateFromApi(existingRecord.currentPeriodEnd),
         })
 
         return { ok: true, state }
@@ -636,6 +491,8 @@ export async function verifyAndGrantProFromCheckoutSession(
   const { currentPeriodStart, currentPeriodEnd } =
     getSubscriptionPeriod(subscription)
 
+  const resolvedCustomerId = extractId(subscription.customer) || customerId
+
   await recordSubscriptionPayment({
     userId,
     userEmail,
@@ -647,7 +504,7 @@ export async function verifyAndGrantProFromCheckoutSession(
     paymentStatus: asString(checkoutSession.payment_status, "paid"),
     stripeSessionId: checkoutSession.id,
     stripeSubscriptionId: subscription.id,
-    stripeCustomerId: extractId(subscription.customer) || customerId,
+    stripeCustomerId: resolvedCustomerId,
     currentPeriodStart,
     currentPeriodEnd,
   })
@@ -658,7 +515,7 @@ export async function verifyAndGrantProFromCheckoutSession(
     status,
     stripeSessionId: checkoutSession.id,
     stripeSubscriptionId: subscription.id,
-    stripeCustomerId: extractId(subscription.customer) || customerId,
+    stripeCustomerId: resolvedCustomerId,
     currentPeriodStart,
     currentPeriodEnd,
   })

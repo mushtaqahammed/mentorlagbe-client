@@ -45,7 +45,8 @@ export async function PATCH(
 
     const updated = await updateAdminUserRole(
       id,
-      normalizedRole as AdminUserRole
+      normalizedRole as AdminUserRole,
+      admin.userId
     )
 
     if (!updated) {

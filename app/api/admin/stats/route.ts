@@ -29,7 +29,7 @@ export async function GET() {
       return jsonError("Admin access required.", 403)
     }
 
-    const stats = await getAdminStats()
+    const stats = await getAdminStats(String(session.user.id))
 
     return Response.json(stats, { headers: NO_STORE })
   } catch (error) {

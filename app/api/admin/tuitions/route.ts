@@ -44,6 +44,7 @@ export async function GET(request: Request) {
       sort: parseTuitionSort(url.searchParams.get("sort")),
       page,
       limit,
+      adminId: admin.userId,
     })
 
     return Response.json(result, { headers: NO_STORE })

@@ -31,7 +31,11 @@ export async function handleApproval(
       return jsonAdminError("Invalid tuition ID.", 400)
     }
 
-    const tuition = await updateTuitionApprovalStatus(id, decision)
+    const tuition = await updateTuitionApprovalStatus(
+      id,
+      decision,
+      admin.userId
+    )
     if (!tuition) {
       return jsonAdminError("Tuition not found.", 404)
     }

@@ -29,7 +29,13 @@ export async function GET(request: Request) {
       50
     )
 
-    const result = await getAdminUsers({ search, role, page, limit })
+    const result = await getAdminUsers({
+      search,
+      role,
+      page,
+      limit,
+      adminId: admin.userId,
+    })
     return Response.json(result, { headers: NO_STORE })
   } catch (error) {
     console.error("Failed to load admin users:", error)

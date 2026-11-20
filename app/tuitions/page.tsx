@@ -1,7 +1,8 @@
 "use client"
 
-import React from "react"
+import React, { Suspense } from "react"
 import Link from "next/link"
+import { useSearchParams } from "next/navigation"
 import {
   AlertCircle,
   ArrowRight,
@@ -198,6 +199,22 @@ function StateCard({
   )
 }
 
+/** Applies ?subject=... links from the homepage subject cards. */
+function SubjectQuerySync({
+  onSubject,
+}: {
+  onSubject: (subject: string) => void
+}) {
+  const searchParams = useSearchParams()
+  const subject = searchParams.get("subject")
+
+  React.useEffect(() => {
+    if (subject) onSubject(subject)
+  }, [subject, onSubject])
+
+  return null
+}
+
 export default function TuitionsPage() {
   const [tuitions, setTuitions] = React.useState<Tuition[]>([])
   const [loading, setLoading] = React.useState(true)
@@ -205,6 +222,10 @@ export default function TuitionsPage() {
   const [search, setSearch] = React.useState("")
   const [mode, setMode] = React.useState("all")
   const [refreshKey, setRefreshKey] = React.useState(0)
+
+  const handleSubject = React.useCallback((subject: string) => {
+    setSearch(subject)
+  }, [])
 
   React.useEffect(() => {
     async function loadTuitions() {
@@ -268,6 +289,10 @@ export default function TuitionsPage() {
 
   return (
     <main className="min-h-svh bg-neutral-950 text-white">
+      <Suspense fallback={null}>
+        <SubjectQuerySync onSubject={handleSubject} />
+      </Suspense>
+
       <section className="relative isolate overflow-hidden border-b border-white/10 bg-neutral-950 text-white">
         <div
           aria-hidden="true"

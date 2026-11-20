@@ -2,10 +2,11 @@ import { betterAuth } from "better-auth"
 import { MongoClient } from "mongodb"
 import { mongodbAdapter } from "@better-auth/mongo-adapter"
 
-export const mongoClient = new MongoClient(
+const mongoClient = new MongoClient(
   process.env.BETTER_AUTH_DB_URI as string
 )
-export const database = mongoClient.db("mentor_lagbe")
+// Kept private to the auth adapter; application data goes through the Express API.
+const database = mongoClient.db("mentor_lagbe")
 
 export const auth = betterAuth({
   database: mongodbAdapter(database, {
