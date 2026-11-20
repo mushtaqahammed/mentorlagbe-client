@@ -263,7 +263,7 @@ export function ManageApplicants() {
           throw new Error("Only tutor accounts can manage applicants.")
         }
 
-        const data = await getTutorApplicants(session.session.token)
+        const data = await getTutorApplicants()
         if (!active) return
 
         setApplicants(data.applicants)
@@ -347,8 +347,7 @@ export function ManageApplicants() {
 
       await updateApplicationStatus(
         reviewTarget.applicant.id,
-        reviewTarget.status,
-        session.session.token
+        reviewTarget.status
       )
 
       notify(

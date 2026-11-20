@@ -1,6 +1,4 @@
-import { headers } from "next/headers"
-
-import { auth } from "@/lib/auth"
+import { getSession } from "@/lib/core/server"
 
 export const NO_STORE = { "Cache-Control": "no-store" } as const
 
@@ -17,9 +15,7 @@ export function jsonAdminError(message: string, status: number) {
  * trusted for protected data or mutations.
  */
 export async function requireAdmin(): Promise<AdminGuardResult> {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  })
+  const session = await getSession()
 
   if (!session?.user?.id) {
     return { ok: false, status: 401, error: "Authentication required." }

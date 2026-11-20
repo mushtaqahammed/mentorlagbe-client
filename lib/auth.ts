@@ -28,6 +28,13 @@ export const auth = betterAuth({
         input: true,
         defaultValue: "Student",
       },
+      // Editable contact detail. Declaring it here is required for Better Auth
+      // to persist it; MongoDB needs no migration for the new optional key.
+      phone: {
+        type: "string",
+        input: true,
+        required: false,
+      },
       // Subscription fields are server-owned. They are written only after
       // Stripe has confirmed a paid, active subscription.
       plan: {

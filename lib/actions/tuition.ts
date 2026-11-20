@@ -187,9 +187,11 @@ export const createTuition = async (
 }
 
 export const createTuitionCount = async (
-  query = ""
+  query: string,
+  token: string
 ): Promise<{ count: number }> => {
   const res = await fetch(`${BASE_URL}/tuitions/count?${query}`, {
+    headers: authHeaders(token),
     cache: "no-store",
   })
 

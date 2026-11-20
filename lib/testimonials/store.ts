@@ -1,3 +1,4 @@
+import { getToken } from "@/lib/core/server"
 import type {
   AdminTestimonial,
   Testimonial,
@@ -14,10 +15,11 @@ function backendUrl(path: string) {
   return `${process.env.BACKEND_API_URL || "http://localhost:5000"}${path}`
 }
 
-function internalHeaders(extra: Record<string, string> = {}) {
+function internalHeaders(extra: Record<string, string> = {}, token = "") {
   return {
     "Content-Type": "application/json",
     "x-internal-secret": process.env.INTERNAL_API_SECRET || "",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...extra,
   }
 }
@@ -124,7 +126,7 @@ export async function listTestimonials(options: {
   })
 
   const response = await fetch(backendUrl(`/admin/testimonials?${params}`), {
-    headers: internalHeaders({ "x-admin-id": options.adminId }),
+    headers: internalHeaders({ "x-admin-id": options.adminId }, await getToken()),
     cache: "no-store",
   })
 
@@ -160,7 +162,7 @@ export async function createTestimonial(input: {
 }) {
   const response = await fetch(backendUrl("/testimonials"), {
     method: "POST",
-    headers: internalHeaders({ "x-user-id": input.userId }),
+    headers: internalHeaders({ "x-user-id": input.userId }, await getToken()),
     // The backend derives name/role/image from the real user record.
     body: JSON.stringify({ rating: input.rating, message: input.message }),
     cache: "no-store",
@@ -189,7 +191,7 @@ export async function updateTestimonialStatus(
     backendUrl(`/admin/testimonials/${encodeURIComponent(id)}`),
     {
       method: "PATCH",
-      headers: internalHeaders({ "x-admin-id": adminId }),
+      headers: internalHeaders({ "x-admin-id": adminId }, await getToken()),
       body: JSON.stringify({ status }),
       cache: "no-store",
     }

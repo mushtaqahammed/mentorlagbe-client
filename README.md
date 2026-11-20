@@ -270,7 +270,41 @@ seeded posts appear immediately because those routes use `cache: "no-store"`.
 
 ---
 
-## 13. Note for Future Sessions (AI / collaborators)
+## 13. Profile management
+
+`/dashboard/profile` is a server-rendered profile page with a client-side edit
+form (`components/dashboard/profile/profile-manager.tsx`). Updates go through
+`PATCH /api/profile`, which uses the Better Auth session and a strict whitelist
+(`name`, `phone`, `image`) — `role` and subscription fields can never be changed
+from the profile page. Image uploads reuse `POST /api/uploads/imgbb`; a direct
+http(s) image URL is also supported, as is removing the current picture. The
+`phone` field is declared in `user.additionalFields` in `lib/auth.ts`.
+
+---
+
+## 14. Token verification & backend API integration
+
+The Express backend has a single token-verification implementation in
+`mentorlagbe-server/src/middleware/verifytoken.js`. It resolves the Better Auth
+session token from `Authorization: Bearer <token>`, rejects missing/invalid/
+expired sessions with `401`, exposes the verified user as `req.user`, and
+`requireRole(...)` returns `403` for insufficient permissions. Every private
+route (tuition CRUD, applications, stats, user/admin/testimonial endpoints)
+uses this middleware; public browsing endpoints remain open. Controllers scope
+queries by `req.user.id` — client-supplied `tutorId`/`applicantId` values are
+never used for authorization.
+
+On the frontend, `lib/core/server.ts` is the single server-side API helper:
+`getSession()` / `getToken()` read the session cookie and `authFetch(url, init)`
+attaches the Bearer token. Server actions in `lib/actions/applications.ts`, the
+admin/testimonial data helpers and the proxy routes all use it rather than
+duplicating token/fetch logic. Client components cannot use `next/headers`, so
+they continue to obtain the session token from the shared `authClient` and pass
+it to the client-side tuition actions only.
+
+---
+
+## 15. Note for Future Sessions (AI / collaborators)
 
 - Everything above reflects the code **as of 2026-11-18**. When unsure whether a feature exists, check the Status table in §2 and the actual files — do not implement anything listed as ✅ again.
 - The **next logical steps** are: finish the placeholder pages (starting with `/tuitions` listing and the role-based `/dashboard`), add auth guards for private routes, complete `globals.css` theme tokens, and scaffold the backend.

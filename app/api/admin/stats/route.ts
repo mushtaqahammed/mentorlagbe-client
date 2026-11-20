@@ -1,7 +1,5 @@
-import { headers } from "next/headers"
-
 import { getAdminStats } from "@/lib/admin/stats"
-import { auth } from "@/lib/auth"
+import { getSession } from "@/lib/core/server"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -16,9 +14,7 @@ export async function GET() {
   try {
     // Verify the Better Auth session on the server; never trust a frontend
     // role check for an endpoint that exposes platform-wide data.
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    })
+    const session = await getSession()
 
     if (!session?.user) {
       return jsonError("Authentication required.", 401)

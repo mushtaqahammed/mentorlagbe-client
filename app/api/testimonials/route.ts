@@ -1,7 +1,5 @@
-import { headers } from "next/headers"
-
-import { auth } from "@/lib/auth"
 import { NO_STORE } from "@/lib/admin/api-auth"
+import { getSession } from "@/lib/core/server"
 import {
   getApprovedTestimonials,
   createTestimonial,
@@ -82,9 +80,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    })
+    const session = await getSession()
 
     if (!session?.user?.id) {
       return jsonError("Authentication required.", 401)

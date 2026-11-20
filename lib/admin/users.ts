@@ -1,4 +1,5 @@
 import { BackendRequestError, adminHeaders, backendRequest } from "@/lib/backend-api"
+import { getToken } from "@/lib/core/server"
 import {
   ADMIN_USER_ROLES,
   type AdminUser,
@@ -45,7 +46,7 @@ export async function getAdminUsers({
   })
 
   return backendRequest<AdminUsersResponse>(`/admin/users?${params}`, {
-    headers: adminHeaders(adminId),
+    headers: adminHeaders(adminId, await getToken()),
   })
 }
 
@@ -60,7 +61,7 @@ export async function updateAdminUserRole(
       `/admin/users/${encodeURIComponent(userId)}/role`,
       {
         method: "PATCH",
-        headers: adminHeaders(adminId),
+        headers: adminHeaders(adminId, await getToken()),
         body: JSON.stringify({ role }),
       }
     )

@@ -3,6 +3,7 @@ import {
   adminHeaders,
   backendRequest,
 } from "@/lib/backend-api"
+import { getToken } from "@/lib/core/server"
 import {
   ADMIN_TUITION_STATUSES,
   type AdminTuition,
@@ -52,7 +53,7 @@ export async function getAdminTuitions({
   })
 
   return backendRequest<AdminTuitionsResponse>(`/admin/tuitions?${params}`, {
-    headers: adminHeaders(adminId),
+    headers: adminHeaders(adminId, await getToken()),
   })
 }
 
@@ -69,7 +70,7 @@ export async function updateTuitionApprovalStatus(
       `/admin/tuitions/${encodeURIComponent(tuitionId)}/approval`,
       {
         method: "PATCH",
-        headers: adminHeaders(adminId),
+        headers: adminHeaders(adminId, await getToken()),
         body: JSON.stringify({ status }),
       }
     )

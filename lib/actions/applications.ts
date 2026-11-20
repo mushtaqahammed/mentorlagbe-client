@@ -1,3 +1,7 @@
+"use server"
+
+import { authFetch } from "../core/server"
+
 export type ApplicationStatus = "pending" | "accepted" | "rejected"
 export type ReviewStatus = "accepted" | "rejected"
 
@@ -63,23 +67,13 @@ const BASE_URL =
   process.env.BACKEND_API_URL ||
   "http://localhost:5000"
 
-function authHeaders(token: string) {
-  return {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${token}`,
-  }
-}
-
 async function parseError(res: Response, fallback: string) {
   const data = await res.json().catch(() => null)
   throw new Error(data?.error || fallback)
 }
 
-export const getStudentStats = async (token: string): Promise<StudentStats> => {
-  const res = await fetch(`${BASE_URL}/student-stats`, {
-    headers: authHeaders(token),
-    cache: "no-store",
-  })
+export const getStudentStats = async (): Promise<StudentStats> => {
+  const res = await authFetch(`${BASE_URL}/student-stats`)
 
   if (!res.ok) {
     await parseError(res, "Could not load your dashboard statistics.")
@@ -89,27 +83,19 @@ export const getStudentStats = async (token: string): Promise<StudentStats> => {
 }
 
 export const getStudentApplications = async (
-  token: string
+  query = ""
 ): Promise<StudentApplicationsResponse> => {
-  const res = await fetch(`${BASE_URL}/student-applications`, {
-    headers: authHeaders(token),
-    cache: "no-store",
-  })
+  const api = `${BASE_URL}/student-applications?${query}`
 
-  if (!res.ok) {
-    await parseError(res, "Could not load your applications.")
-  }
+  const res = await authFetch(api)
 
   return res.json()
 }
 
-export const deleteStudentApplication = async (id: string, token: string) => {
-  const res = await fetch(
+export const deleteStudentApplication = async (id: string) => {
+  const res = await authFetch(
     `${BASE_URL}/applications/${encodeURIComponent(id)}`,
-    {
-      method: "DELETE",
-      headers: authHeaders(token),
-    }
+    { method: "DELETE", headers: { "Content-Type": "application/json" } }
   )
 
   if (!res.ok) {
@@ -119,13 +105,8 @@ export const deleteStudentApplication = async (id: string, token: string) => {
   return res.json()
 }
 
-export const getTutorApplicants = async (
-  token: string
-): Promise<TutorApplicantsResponse> => {
-  const res = await fetch(`${BASE_URL}/tutor-applicants`, {
-    headers: authHeaders(token),
-    cache: "no-store",
-  })
+export const getTutorApplicants = async (): Promise<TutorApplicantsResponse> => {
+  const res = await authFetch(`${BASE_URL}/tutor-applicants`)
 
   if (!res.ok) {
     await parseError(res, "Could not load your applicants.")
@@ -136,14 +117,13 @@ export const getTutorApplicants = async (
 
 export const updateApplicationStatus = async (
   id: string,
-  status: ReviewStatus,
-  token: string
+  status: ReviewStatus
 ) => {
-  const res = await fetch(
+  const res = await authFetch(
     `${BASE_URL}/applications/${encodeURIComponent(id)}/status`,
     {
       method: "PATCH",
-      headers: authHeaders(token),
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
     }
   )

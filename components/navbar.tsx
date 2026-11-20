@@ -102,7 +102,7 @@ export function Navbar() {
 
   const accountLinks = [
     { href: "/dashboard", label: "Dashboard" },
-    { href: "/update-profile", label: "Update Profile" },
+    { href: "/dashboard/profile", label: "Update Profile" },
   ]
 
   function isActive(href: string) {

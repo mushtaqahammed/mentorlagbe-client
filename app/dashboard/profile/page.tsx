@@ -1,17 +1,38 @@
 import Link from "next/link"
+import { redirect } from "next/navigation"
 import { ArrowRight, CheckCircle2, Crown, Sparkles } from "lucide-react"
 
 import { DashboardPage } from "@/components/dashboard/dashboard-page"
+import { ProfileManager } from "@/components/dashboard/profile/profile-manager"
 import { getPlanById } from "@/lib/plans"
+import type { ProfileUser } from "@/lib/profile"
 import { getRequestSession } from "@/lib/session"
 import { getSubscriptionState } from "@/lib/subscription"
 
 export default async function ProfilePage() {
   const session = await getRequestSession({ fresh: true })
-  const user = session?.user
-  const subscription = user ? await getSubscriptionState(user.id) : null
+
+  if (!session?.user) {
+    redirect("/sign-in")
+  }
+
+  const user = session.user
+  const subscription = await getSubscriptionState(user.id)
   const isPro = subscription?.isPro ?? false
   const proPlan = getPlanById(subscription?.planId ?? null)
+
+  const profile: ProfileUser = {
+    id: user.id,
+    name: user.name ?? "",
+    email: user.email ?? "",
+    image: user.image ?? null,
+    phone: user.phone ?? "",
+    role: user.role ?? "Student",
+    createdAt:
+      user.createdAt instanceof Date
+        ? user.createdAt.toISOString()
+        : (user.createdAt ?? null),
+  }
   const renewalDate = subscription?.currentPeriodEnd
     ? new Date(subscription.currentPeriodEnd).toLocaleDateString("en-US", {
         year: "numeric",
@@ -25,39 +46,8 @@ export default async function ProfilePage() {
       title="My Profile"
       description="Manage your personal details and review your current subscription."
     >
-      <div className="mt-8 grid gap-4 md:grid-cols-2">
-        <section
-          id="profile"
-          className="rounded-xl border border-white/10 bg-neutral-950/60 p-5"
-        >
-          <h2 className="text-sm font-semibold text-white">Profile details</h2>
-          <dl className="mt-4 space-y-4 text-sm">
-            <div>
-              <dt className="text-xs font-medium tracking-wide text-neutral-500 uppercase">
-                Name
-              </dt>
-              <dd className="mt-1 font-medium text-neutral-100">
-                {user?.name || "—"}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs font-medium tracking-wide text-neutral-500 uppercase">
-                Email
-              </dt>
-              <dd className="mt-1 truncate font-medium text-neutral-100">
-                {user?.email || "—"}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs font-medium tracking-wide text-neutral-500 uppercase">
-                Account role
-              </dt>
-              <dd className="mt-1 font-medium text-neutral-100">
-                {user?.role || "—"}
-              </dd>
-            </div>
-          </dl>
-        </section>
+      <div className="mt-8 grid items-start gap-4 md:grid-cols-2">
+        <ProfileManager initialUser={profile} />
 
         <section
           id="subscription"

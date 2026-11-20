@@ -49,7 +49,7 @@ export function StudentDashboard() {
           throw new Error("Only student accounts can view this dashboard.")
         }
 
-        setStats(await getStudentStats(session.session.token))
+        setStats(await getStudentStats())
       } catch (loadError) {
         const message = userMessage(
           loadError,

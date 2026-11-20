@@ -1,5 +1,4 @@
-import { headers } from "next/headers"
-import { auth } from "@/lib/auth"
+import { getSession } from "@/lib/core/server"
 import { getSubscriptionState } from "@/lib/subscription"
 import { isPubliclyVisibleTuition } from "@/lib/tuitions/public"
 
@@ -10,9 +9,7 @@ function errorResponse(message: string, status: number) {
 }
 
 async function getTutor() {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  })
+  const session = await getSession()
 
   const role = session?.user.role?.trim().toLowerCase()
 

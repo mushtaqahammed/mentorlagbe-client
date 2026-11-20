@@ -1,17 +1,12 @@
-import { headers } from "next/headers"
-
-import { auth } from "@/lib/auth"
+import { getSession } from "@/lib/core/server"
 
 /**
- * Server-side Better Auth session lookup. Used by pages that must make
- * role-based decisions before rendering any plan-specific UI.
+ * Server-side Better Auth session lookup used by pages and route handlers.
+ * Delegates to core/server so session retrieval has one implementation.
  *
- * Pass `fresh: true` after a subscription change so the user document is read
- * from the database instead of the signed-cookie cache.
+ * Pass `fresh: true` after a subscription/profile change so the user document
+ * is read from the database instead of the signed-cookie cache.
  */
 export async function getRequestSession(options?: { fresh?: boolean }) {
-  return auth.api.getSession({
-    headers: await headers(),
-    query: options?.fresh ? { disableCookieCache: true } : undefined,
-  })
+  return getSession(options)
 }

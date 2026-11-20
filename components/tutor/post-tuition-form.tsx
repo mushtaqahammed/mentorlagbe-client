@@ -396,7 +396,7 @@ export function PostTuitionForm() {
       const access = await readSubscriptionState()
       if (access) setSubscription(access)
 
-      const countRes = await createTuitionCount(`tutorId=${tutorId}`)
+      const countRes = await createTuitionCount(`tutorId=${tutorId}`, token)
 
       if (!access?.isPro && countRes.count >= 2) {
         notify.info(

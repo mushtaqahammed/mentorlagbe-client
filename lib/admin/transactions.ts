@@ -8,6 +8,7 @@ import {
   type AdminTransactionsResponse,
 } from "@/lib/admin/types"
 import { adminHeaders, backendRequest } from "@/lib/backend-api"
+import { getToken } from "@/lib/core/server"
 
 export function isAdminTransactionRole(
   value: unknown
@@ -54,6 +55,6 @@ export async function getAdminTransactions({
 
   return backendRequest<AdminTransactionsResponse>(
     `/admin/transactions?${params}`,
-    { headers: adminHeaders(adminId) }
+    { headers: adminHeaders(adminId, await getToken()) }
   )
 }

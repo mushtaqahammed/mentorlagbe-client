@@ -60,18 +60,16 @@ function notify(
   else uiNotify.info(title, options)
 }
 
-async function getStudentToken() {
+async function assertStudentSession() {
   const { data: session, error } = await authClient.getSession()
 
-  if (error || !session?.session.token) {
+  if (error || !session?.user?.id) {
     throw new Error("Please sign in again to view your applications.")
   }
 
   if (String(session.user.role).toLowerCase() !== "student") {
     throw new Error("Only student accounts can view this page.")
   }
-
-  return session.session.token
 }
 
 function formatDate(value: string) {
@@ -193,8 +191,8 @@ export function MyApplications() {
       const showErrorState = showErrorStateRef.current
 
       try {
-        const token = await getStudentToken()
-        const data = await getStudentApplications(token)
+        await assertStudentSession()
+        const data = await getStudentApplications()
         if (!active) return
 
         setApplications(data.applications)
@@ -266,8 +264,8 @@ export function MyApplications() {
     setBusyId(deleteTarget.id)
 
     try {
-      const token = await getStudentToken()
-      await deleteStudentApplication(deleteTarget.id, token)
+      await assertStudentSession()
+      await deleteStudentApplication(deleteTarget.id)
 
       notify(
         "success",
