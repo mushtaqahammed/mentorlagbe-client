@@ -19,6 +19,7 @@ import {
   XCircle,
 } from "lucide-react"
 
+import { TuitionBanner } from "@/components/tuitions/tuition-banner"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   FEATURED_TUITIONS_LIMIT,
@@ -133,6 +134,12 @@ export function FeaturedTuitionCard({
       aria-label={`View details for ${tuition.title || "tuition"}`}
     >
       <article className="flex h-full flex-col">
+        <TuitionBanner
+          src={tuition.bannerImage}
+          alt={tuition.title || "Tuition banner"}
+          subject={tuition.subject}
+        />
+
         <div className="flex items-start justify-between gap-3">
           <span className="inline-flex min-w-0 items-center gap-1.5 rounded-full bg-lime-400/10 px-2.5 py-1 text-[11px] font-semibold tracking-wide text-lime-300 ring-1 ring-lime-400/25">
             <BookOpen className="size-3 shrink-0" aria-hidden="true" />
@@ -216,6 +223,7 @@ export function FeaturedTuitionCard({
 function FeaturedCardSkeleton() {
   return (
     <div className={skeletonCardClasses} aria-hidden="true">
+      <Skeleton className="mb-4 aspect-[16/8] w-full rounded-xl bg-white/10" />
       <div className="flex items-start justify-between gap-3">
         <Skeleton className="h-6 w-28 rounded-full bg-white/10" />
         <Skeleton className="h-6 w-16 rounded-full bg-white/10" />

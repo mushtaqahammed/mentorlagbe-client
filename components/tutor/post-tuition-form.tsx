@@ -379,10 +379,13 @@ export function PostTuitionForm() {
 
       const { data: session } = await authClient.getSession()
 
-      if (!session?.user?.id) {
+      if (
+        !session?.user?.id ||
+        String(session.user.role).toLowerCase() !== "tutor"
+      ) {
         notify.warning(
-          "Session expired",
-          "Please sign in again to post a tuition."
+          "Tutor access required",
+          "Please sign in with a tutor account to post a tuition."
         )
         return
       }
@@ -404,9 +407,19 @@ export function PostTuitionForm() {
         return
       }
 
-      // Upload the banner first: the backend stores a URL, so sending only the
-      // local file name would leave the post without an image.
-      const bannerImage = imageFile ? await uploadBannerImage(imageFile) : ""
+      // The banner is optional. If image hosting is unavailable, publish the
+      // post without it instead of blocking the whole submission.
+      let bannerImage = ""
+      if (imageFile) {
+        try {
+          bannerImage = await uploadBannerImage(imageFile)
+        } catch {
+          notify.warning(
+            "Banner not uploaded",
+            "Your tuition will be published without a banner image."
+          )
+        }
+      }
 
       createStarted = true
       await notify.promise(
