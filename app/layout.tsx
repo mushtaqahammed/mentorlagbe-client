@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google"
 import "./globals.css"
 import { SiteChrome } from "@/components/site-chrome"
 import { ThemeProvider } from "@/components/theme-provider"
+import { AppToastContainer } from "@/components/ui/toast-container"
 import { cn } from "@/lib/utils"
 
 const geist = Geist({
@@ -36,6 +37,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <SiteChrome>{children}</SiteChrome>
+          <AppToastContainer />
         </ThemeProvider>
       </body>
     </html>

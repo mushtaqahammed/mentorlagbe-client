@@ -13,6 +13,7 @@ import {
 } from "lucide-react"
 
 import { authClient, signOut } from "@/lib/auth-client"
+import { notify, userMessage } from "@/lib/notify"
 import { Logo } from "@/components/logo"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -79,13 +80,17 @@ export function Navbar() {
     try {
       setIsSigningOut(true)
 
-      await signOut()
+      const { error: signOutError } = await signOut()
+      if (signOutError) {
+        throw new Error(signOutError.message ?? "Could not log out.")
+      }
 
       setMobileOpen(false)
+      notify.success("Logged out successfully!")
       router.push("/")
       router.refresh()
     } catch (error) {
-      console.error("Sign out failed:", error)
+      notify.error("Could not log out", userMessage(error))
     } finally {
       setIsSigningOut(false)
     }

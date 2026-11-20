@@ -26,6 +26,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
+import { notify, userMessage } from "@/lib/notify"
 import { cn } from "@/lib/utils"
 
 type Tuition = {
@@ -222,6 +223,7 @@ export default function TuitionsPage() {
   const [search, setSearch] = React.useState("")
   const [mode, setMode] = React.useState("all")
   const [refreshKey, setRefreshKey] = React.useState(0)
+  const lastErrorRef = React.useRef("")
 
   const handleSubject = React.useCallback((subject: string) => {
     setSearch(subject)
@@ -244,13 +246,17 @@ export default function TuitionsPage() {
 
         const data = await response.json()
         setTuitions(Array.isArray(data) ? data : data.tuitions || [])
+        lastErrorRef.current = ""
       } catch (fetchError) {
-        console.error("Error fetching tuitions:", fetchError)
-        setError(
-          fetchError instanceof Error
-            ? fetchError.message
-            : "Could not load tuition posts. Please try again."
+        const message = userMessage(
+          fetchError,
+          "Could not load tuition posts. Please try again."
         )
+        setError(message)
+        if (lastErrorRef.current !== message) {
+          lastErrorRef.current = message
+          notify.error("Could not load tuitions", message)
+        }
       } finally {
         setLoading(false)
       }

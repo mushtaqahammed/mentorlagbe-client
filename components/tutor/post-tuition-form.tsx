@@ -37,6 +37,7 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { authClient } from "@/lib/auth-client"
+import { notify, userMessage } from "@/lib/notify"
 import type { SubscriptionState } from "@/lib/subscription"
 import { cn } from "@/lib/utils"
 import {
@@ -111,9 +112,10 @@ async function uploadBannerImage(file: File) {
     body,
   })
 
-  const data = (await response.json().catch(() => null)) as
-    | { url?: string; error?: string }
-    | null
+  const data = (await response.json().catch(() => null)) as {
+    url?: string
+    error?: string
+  } | null
 
   if (!response.ok || !data?.url) {
     throw new Error(data?.error || "Could not upload the banner image.")
@@ -252,7 +254,6 @@ export function PostTuitionForm() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [isDragging, setIsDragging] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [submitError, setSubmitError] = useState("")
   const [subscription, setSubscription] = useState<SubscriptionState | null>(
     null
   )
@@ -300,16 +301,18 @@ export function PostTuitionForm() {
 
   const handleSelectedFile = useCallback((file: File) => {
     if (!file.type.startsWith("image/")) {
-      setSubmitError("Please choose an image file (JPG, PNG, WebP, or GIF).")
+      notify.warning("Invalid image", "Choose a JPG, PNG, WebP or GIF file.")
       return
     }
 
     if (file.size > MAX_BANNER_BYTES) {
-      setSubmitError("Banner images must be 5 MB or smaller.")
+      notify.warning(
+        "Image too large",
+        "Banner images must be 5 MB or smaller."
+      )
       return
     }
 
-    setSubmitError("")
     if (previewRef.current) URL.revokeObjectURL(previewRef.current)
     const objectUrl = URL.createObjectURL(file)
     previewRef.current = objectUrl
@@ -339,9 +342,10 @@ export function PostTuitionForm() {
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
+    let createErrorHandled = false
+
     try {
       setIsSubmitting(true)
-      setSubmitError("")
 
       if (
         !values.title.trim() ||
@@ -351,7 +355,10 @@ export function PostTuitionForm() {
         !values.location.trim() ||
         !values.description.trim()
       ) {
-        setSubmitError("Please fill in every field before submitting.")
+        notify.warning(
+          "Missing details",
+          "Please fill in every field before submitting."
+        )
         return
       }
 
@@ -359,12 +366,15 @@ export function PostTuitionForm() {
       const daysPerWeek = Number(values.daysPerWeek)
 
       if (!Number.isFinite(monthlyFee) || monthlyFee <= 0) {
-        setSubmitError("Enter a valid monthly fee.")
+        notify.warning("Invalid monthly fee", "Enter a valid amount in BDT.")
         return
       }
 
       if (!Number.isFinite(daysPerWeek) || daysPerWeek < 1) {
-        setSubmitError("Select how many days per week you can teach.")
+        notify.warning(
+          "Invalid days per week",
+          "Select how many days per week you can teach."
+        )
         return
       }
 
@@ -373,7 +383,10 @@ export function PostTuitionForm() {
       const tutorId = session?.user?.id
 
       if (!token || !tutorId) {
-        setSubmitError("Your session has expired. Please sign in again.")
+        notify.warning(
+          "Session expired",
+          "Please sign in again to post a tuition."
+        )
         return
       }
 
@@ -386,6 +399,10 @@ export function PostTuitionForm() {
       const countRes = await createTuitionCount(`tutorId=${tutorId}`)
 
       if (!access?.isPro && countRes.count >= 2) {
+        notify.info(
+          "Post limit reached",
+          "Upgrade to Pro to publish more tuitions."
+        )
         router.push("/pricing")
         return
       }
@@ -394,24 +411,36 @@ export function PostTuitionForm() {
       // local file name would leave the post without an image.
       const bannerImage = imageFile ? await uploadBannerImage(imageFile) : ""
 
-      await createTuition(
+      await notify.promise(
+        createTuition(
+          {
+            ...values,
+            monthlyFee,
+            daysPerWeek,
+            bannerImage,
+          },
+          token
+        ),
         {
-          ...values,
-          monthlyFee,
-          daysPerWeek,
-          bannerImage,
-        },
-        token
+          loading: "Publishing your tuition...",
+          success: "Created successfully!",
+          error: (error: unknown) => {
+            createErrorHandled = true
+            return userMessage(error, "Could not post this tuition.")
+          },
+        }
       )
 
       router.push("/dashboard/tutor/my-tuitions")
       router.refresh()
-    } catch (submitError) {
-      setSubmitError(
-        submitError instanceof Error
-          ? submitError.message
-          : "Could not post this tuition."
-      )
+    } catch (error) {
+      // toast.promise already reported failures from the create request.
+      if (!createErrorHandled) {
+        notify.error(
+          "Could not post this tuition",
+          userMessage(error, "Please try again.")
+        )
+      }
     } finally {
       setIsSubmitting(false)
     }
@@ -740,15 +769,9 @@ export function PostTuitionForm() {
         </div>
 
         <div className="flex flex-col-reverse gap-3 border-t border-white/10 bg-neutral-950/40 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-7">
-          {submitError ? (
-            <p role="alert" className="text-xs text-rose-400">
-              {submitError}
-            </p>
-          ) : (
-            <p className="text-xs text-neutral-500">
-              New posts stay pending until an admin reviews and approves them.
-            </p>
-          )}
+          <p className="text-xs text-neutral-500">
+            New posts stay pending until an admin reviews and approves them.
+          </p>
           <div className="flex flex-col gap-3 sm:flex-row">
             <Button
               type="button"

@@ -1,13 +1,6 @@
 "use client"
 
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type Dispatch,
-  type SetStateAction,
-} from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import {
   AlertCircle,
   AlertTriangle,
@@ -39,7 +32,7 @@ import { DashboardPage } from "@/components/dashboard/dashboard-page"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
-import { ToastViewport, type ToastItem } from "@/components/ui/toast"
+import { notify as uiNotify } from "@/lib/notify"
 import {
   ADMIN_TUITIONS_PAGE_SIZE,
   type AdminApiError,
@@ -59,8 +52,6 @@ type PendingAction = {
   decision: ApprovalDecision
 }
 
-type SetToasts = Dispatch<SetStateAction<ToastItem[]>>
-
 const numberFormatter = new Intl.NumberFormat("en-BD")
 
 const STATUS_TABS: {
@@ -74,16 +65,15 @@ const STATUS_TABS: {
 ]
 
 function notify(
-  setToasts: SetToasts,
-  variant: ToastItem["variant"],
+  variant: "success" | "error" | "info",
   title: string,
   description?: string
 ) {
-  const id = Date.now() + Math.random()
-  setToasts((current) => [...current, { id, variant, title, description }])
-  window.setTimeout(() => {
-    setToasts((current) => current.filter((toast) => toast.id !== id))
-  }, 4000)
+  const options = description ? { description } : undefined
+
+  if (variant === "success") uiNotify.success(title, options)
+  else if (variant === "error") uiNotify.error(title, options)
+  else uiNotify.info(title, options)
 }
 
 function errorMessage(data: unknown, fallback: string) {
@@ -451,7 +441,6 @@ export function AdminTuitionApprovals() {
   const [error, setError] = useState("")
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null)
   const [updatingId, setUpdatingId] = useState<string | null>(null)
-  const [toasts, setToasts] = useState<ToastItem[]>([])
 
   const requestIdRef = useRef(0)
 
@@ -584,7 +573,6 @@ export function AdminTuitionApprovals() {
 
       const actionLabel = decision === "approved" ? "approved" : "rejected"
       notify(
-        setToasts,
         "success",
         `Tuition ${actionLabel}`,
         `“${updated.title || "Untitled tuition"}” is now ${actionLabel}.`
@@ -592,7 +580,6 @@ export function AdminTuitionApprovals() {
       await loadTuitions({ silent: true })
     } catch (actionError) {
       notify(
-        setToasts,
         "error",
         "Could not update approval status",
         actionError instanceof Error ? actionError.message : "Please try again."
@@ -966,13 +953,6 @@ export function AdminTuitionApprovals() {
           </>
         )}
       </DashboardPage>
-
-      <ToastViewport
-        toasts={toasts}
-        onDismiss={(id) =>
-          setToasts((current) => current.filter((toast) => toast.id !== id))
-        }
-      />
 
       {pendingAction ? (
         <div

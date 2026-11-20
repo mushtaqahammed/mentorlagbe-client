@@ -34,6 +34,7 @@ import {
   type AdminTransactionsResponse,
   type AdminTransactionsSummary,
 } from "@/lib/admin/types"
+import { notify, userMessage } from "@/lib/notify"
 import { cn } from "@/lib/utils"
 
 const numberFormatter = new Intl.NumberFormat("en-BD")
@@ -346,11 +347,9 @@ export function AdminTransactionsManager() {
         if (loadError instanceof Error && loadError.name === "AbortError")
           return
         if (requestId !== requestIdRef.current) return
-        setError(
-          loadError instanceof Error
-            ? loadError.message
-            : "Could not load transactions."
-        )
+        const message = userMessage(loadError, "Could not load transactions.")
+        setError(message)
+        notify.error("Could not load transactions", message)
       } finally {
         if (requestId === requestIdRef.current) {
           setLoading(false)

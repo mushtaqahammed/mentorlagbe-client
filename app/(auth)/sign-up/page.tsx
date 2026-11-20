@@ -14,6 +14,7 @@ import {
 } from "@/components/auth/auth-form"
 
 import { authClient } from "@/lib/auth-client"
+import { notify } from "@/lib/notify"
 
 type SignUpData = {
   name: string
@@ -29,14 +30,10 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 export default function SignUpPage() {
   const router = useRouter()
 
-  const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
 
   async function handleSignUp(data: SignUpData) {
     setPending(true)
-    setError(null)
-    setSuccess(null)
 
     try {
       const { error: signUpError } = await authClient.signUp.email({
@@ -51,18 +48,23 @@ export default function SignUpPage() {
       })
 
       if (signUpError) {
-        setError(signUpError.message ?? "Sign up failed.")
+        notify.error(
+          "Sign up failed",
+          signUpError.message ?? "Please try again."
+        )
         return
       }
 
-      setSuccess("Account created successfully! Redirecting...")
+      notify.success("Account created successfully!", {
+        description: "Redirecting you home...",
+      })
 
       setTimeout(() => {
         router.push("/")
         router.refresh()
       }, 1500)
     } catch {
-      setError("Something went wrong. Please try again.")
+      notify.error("Sign up failed", "Something went wrong. Please try again.")
     } finally {
       setPending(false)
     }
@@ -71,34 +73,37 @@ export default function SignUpPage() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
-    setError(null)
-    setSuccess(null)
-
     const formData = new FormData(event.currentTarget)
     const data = Object.fromEntries(formData) as Record<string, string>
 
     if (!data.name?.trim()) {
-      setError("Full name is required.")
+      notify.warning("Missing details", "Full name is required.")
       return
     }
 
     if (!data.email?.trim()) {
-      setError("Email is required.")
+      notify.warning("Missing details", "Email is required.")
       return
     }
 
     if (!EMAIL_PATTERN.test(data.email.trim())) {
-      setError("Please enter a valid email address.")
+      notify.warning("Invalid email", "Please enter a valid email address.")
       return
     }
 
     if (!data.password || data.password.length < 8) {
-      setError("Password must be at least 8 characters long.")
+      notify.warning(
+        "Weak password",
+        "Password must be at least 8 characters long."
+      )
       return
     }
 
     if (!data.role || !ROLES.includes(data.role as (typeof ROLES)[number])) {
-      setError("Please select whether you are a Student or a Tutor.")
+      notify.warning(
+        "Missing details",
+        "Please select whether you are a Student or a Tutor."
+      )
       return
     }
 
@@ -172,18 +177,6 @@ export default function SignUpPage() {
           minLength={8}
         />
 
-        {error && (
-          <p className="text-sm text-red-400" role="alert">
-            {error}
-          </p>
-        )}
-
-        {success && (
-          <p className="text-sm font-medium text-lime-400" role="status">
-            {success}
-          </p>
-        )}
-
         <SubmitButton disabled={pending}>
           {pending ? "Creating account..." : "Sign Up"}
         </SubmitButton>
@@ -192,9 +185,19 @@ export default function SignUpPage() {
       <Divider />
 
       <GoogleButton
-        onClick={() =>
-          authClient.signIn.social({ provider: "google", callbackURL: "/" })
-        }
+        onClick={async () => {
+          try {
+            await authClient.signIn.social({
+              provider: "google",
+              callbackURL: "/",
+            })
+          } catch {
+            notify.error(
+              "Sign in failed",
+              "Something went wrong. Please try again."
+            )
+          }
+        }}
       />
     </AuthShell>
   )

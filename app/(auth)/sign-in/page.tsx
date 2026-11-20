@@ -13,6 +13,7 @@ import {
 } from "@/components/auth/auth-form"
 
 import { authClient } from "@/lib/auth-client"
+import { notify } from "@/lib/notify"
 
 type SignInData = {
   email: string
@@ -22,12 +23,10 @@ type SignInData = {
 export default function SignInPage() {
   const router = useRouter()
 
-  const [error, setError] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
 
   const handleSignIn = async (data: SignInData) => {
     setPending(true)
-    setError(null)
 
     try {
       const { error: signInError } = await authClient.signIn.email({
@@ -37,14 +36,18 @@ export default function SignInPage() {
       })
 
       if (signInError) {
-        setError(signInError.message ?? "Invalid email or password.")
+        notify.error(
+          "Sign in failed",
+          signInError.message ?? "Invalid email or password."
+        )
         return
       }
 
+      notify.success("Welcome back!")
       router.push("/")
       router.refresh()
     } catch {
-      setError("Something went wrong. Please try again.")
+      notify.error("Sign in failed", "Something went wrong. Please try again.")
     } finally {
       setPending(false)
     }
@@ -52,7 +55,6 @@ export default function SignInPage() {
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    setError(null)
 
     const formData = new FormData(event.currentTarget)
 
@@ -60,11 +62,22 @@ export default function SignInPage() {
     const password = formData.get("password")?.toString() ?? ""
 
     if (!email || !password) {
-      setError("Please enter your email and password.")
+      notify.warning("Missing details", "Please enter your email and password.")
       return
     }
 
     await handleSignIn({ email, password })
+  }
+
+  const handleGoogleSignIn = async () => {
+    try {
+      await authClient.signIn.social({
+        provider: "google",
+        callbackURL: "/",
+      })
+    } catch {
+      notify.error("Sign in failed", "Something went wrong. Please try again.")
+    }
   }
 
   return (
@@ -106,12 +119,6 @@ export default function SignInPage() {
           required
         />
 
-        {error && (
-          <p className="text-sm text-red-400" role="alert">
-            {error}
-          </p>
-        )}
-
         <SubmitButton disabled={pending}>
           {pending ? "Signing in..." : "Sign In"}
         </SubmitButton>
@@ -119,14 +126,7 @@ export default function SignInPage() {
 
       <Divider />
 
-      <GoogleButton
-        onClick={async () => {
-          await authClient.signIn.social({
-            provider: "google",
-            callbackURL: "/",
-          })
-        }}
-      />
+      <GoogleButton onClick={handleGoogleSignIn} />
     </AuthShell>
   )
 }

@@ -1,13 +1,6 @@
 "use client"
 
-import {
-  useEffect,
-  useState,
-  type Dispatch,
-  type FormEvent,
-  type ReactNode,
-  type SetStateAction,
-} from "react"
+import { useEffect, useState, type FormEvent, type ReactNode } from "react"
 import Link from "next/link"
 import {
   AlertTriangle,
@@ -37,7 +30,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
-import { ToastViewport, type ToastItem } from "@/components/ui/toast"
+import { notify as uiNotify, userMessage } from "@/lib/notify"
 import {
   CLASS_LEVEL_OPTIONS,
   DAYS_PER_WEEK_OPTIONS,
@@ -60,8 +53,6 @@ type EditForm = Omit<TuitionInput, "monthlyFee" | "daysPerWeek"> & {
   daysPerWeek: string
 }
 
-type SetToasts = Dispatch<SetStateAction<ToastItem[]>>
-
 const cardClasses =
   "rounded-2xl border border-white/10 bg-neutral-900/70 shadow-lg shadow-black/10"
 const inputClasses =
@@ -70,17 +61,15 @@ const selectClasses = cn(inputClasses, "appearance-none pr-10")
 const labelClasses = "text-sm font-medium text-neutral-200"
 
 function notify(
-  setToasts: SetToasts,
-  variant: ToastItem["variant"],
+  variant: "success" | "error" | "info",
   title: string,
   description?: string
 ) {
-  const id = Date.now() + Math.random()
-  setToasts((current) => [...current, { id, variant, title, description }])
+  const options = description ? { description } : undefined
 
-  window.setTimeout(() => {
-    setToasts((current) => current.filter((toast) => toast.id !== id))
-  }, 4000)
+  if (variant === "success") uiNotify.success(title, options)
+  else if (variant === "error") uiNotify.error(title, options)
+  else uiNotify.info(title, options)
 }
 
 async function getAuth() {
@@ -233,7 +222,6 @@ export function MyTuitions() {
   const [statusFilter, setStatusFilter] = useState("all")
   const [approvalFilter, setApprovalFilter] = useState("all")
 
-  const [toasts, setToasts] = useState<ToastItem[]>([])
   const [editing, setEditing] = useState<TuitionRecord | null>(null)
   const [editForm, setEditForm] = useState<EditForm | null>(null)
   const [saving, setSaving] = useState(false)
@@ -258,7 +246,7 @@ export function MyTuitions() {
             ? error.message
             : "Could not load your tuitions."
         setLoadError(message)
-        notify(setToasts, "error", "Could not load tuitions", message)
+        notify("error", "Could not load tuitions", message)
       } finally {
         setLoading(false)
       }
@@ -337,7 +325,6 @@ export function MyTuitions() {
 
       if (!Number.isFinite(monthlyFee) || monthlyFee <= 0) {
         notify(
-          setToasts,
           "error",
           "Invalid monthly fee",
           "Enter a valid amount, for example 5000."
@@ -347,7 +334,6 @@ export function MyTuitions() {
 
       if (!Number.isFinite(daysPerWeek) || daysPerWeek < 1) {
         notify(
-          setToasts,
           "error",
           "Invalid days per week",
           "Select how many days per week you can teach."
@@ -367,21 +353,15 @@ export function MyTuitions() {
       )
 
       notify(
-        setToasts,
         "success",
-        "Tuition updated",
+        "Updated successfully!",
         "Your changes have been saved."
       )
       setEditing(null)
       setEditForm(null)
       refresh()
     } catch (error) {
-      notify(
-        setToasts,
-        "error",
-        "Update failed",
-        error instanceof Error ? error.message : "Please try again."
-      )
+      notify("error", "Update failed", userMessage(error))
     } finally {
       setSaving(false)
     }
@@ -396,19 +376,13 @@ export function MyTuitions() {
       await updateTuitionStatus(tuition.id, nextStatus, token)
 
       notify(
-        setToasts,
         "success",
-        "Status updated",
+        "Updated successfully!",
         `This tuition is now ${nextStatus.toLowerCase()}.`
       )
       refresh()
     } catch (error) {
-      notify(
-        setToasts,
-        "error",
-        "Status update failed",
-        error instanceof Error ? error.message : "Please try again."
-      )
+      notify("error", "Status update failed", userMessage(error))
     } finally {
       setBusyId(null)
     }
@@ -424,20 +398,14 @@ export function MyTuitions() {
       await deleteTuition(tuitionToDelete.id, token)
 
       notify(
-        setToasts,
         "success",
-        "Tuition deleted",
+        "Deleted successfully!",
         "The post has been removed from your list."
       )
       setTuitionToDelete(null)
       refresh()
     } catch (error) {
-      notify(
-        setToasts,
-        "error",
-        "Delete failed",
-        error instanceof Error ? error.message : "Please try again."
-      )
+      notify("error", "Delete failed", userMessage(error))
     } finally {
       setDeleting(false)
     }
@@ -445,13 +413,6 @@ export function MyTuitions() {
 
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
-      <ToastViewport
-        toasts={toasts}
-        onDismiss={(id) =>
-          setToasts((current) => current.filter((toast) => toast.id !== id))
-        }
-      />
-
       <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <span className="inline-flex items-center gap-2 rounded-full border border-lime-400/25 bg-lime-400/10 px-3 py-1 text-xs font-semibold tracking-wide text-lime-300 uppercase">

@@ -1,10 +1,6 @@
 "use client"
 
-import React, {
-  type Dispatch,
-  type FormEvent,
-  type SetStateAction,
-} from "react"
+import React, { type FormEvent } from "react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
 import {
@@ -29,9 +25,9 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
-import { ToastViewport, type ToastItem } from "@/components/ui/toast"
 import { applyForTuition } from "@/lib/actions/tuition"
 import { authClient } from "@/lib/auth-client"
+import { notify as uiNotify, userMessage } from "@/lib/notify"
 import { cn } from "@/lib/utils"
 
 type Tuition = {
@@ -50,23 +46,19 @@ type Tuition = {
   tutorName?: string
 }
 
-type SetToasts = Dispatch<SetStateAction<ToastItem[]>>
-
 const cardClasses =
   "rounded-[1.5rem] border border-white/10 bg-neutral-900/70 p-6 shadow-lg shadow-black/10"
 
 function notify(
-  setToasts: SetToasts,
-  variant: ToastItem["variant"],
+  variant: "success" | "error" | "info",
   title: string,
   description?: string
 ) {
-  const id = Date.now() + Math.random()
-  setToasts((current) => [...current, { id, variant, title, description }])
+  const options = description ? { description } : undefined
 
-  window.setTimeout(() => {
-    setToasts((current) => current.filter((toast) => toast.id !== id))
-  }, 4000)
+  if (variant === "success") uiNotify.success(title, options)
+  else if (variant === "error") uiNotify.error(title, options)
+  else uiNotify.info(title, options)
 }
 
 function formatDate(value: string) {
@@ -178,7 +170,6 @@ export default function TuitionDetailPage() {
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState("")
   const [refreshKey, setRefreshKey] = React.useState(0)
-  const [toasts, setToasts] = React.useState<ToastItem[]>([])
   const [submitting, setSubmitting] = React.useState(false)
   const [applied, setApplied] = React.useState(false)
   const [showApplyForm, setShowApplyForm] = React.useState(false)
@@ -210,12 +201,12 @@ export default function TuitionDetailPage() {
 
         setTuition(await response.json())
       } catch (fetchError) {
-        console.error("Error fetching tuition:", fetchError)
-        setError(
-          fetchError instanceof Error
-            ? fetchError.message
-            : "Could not load tuition details."
+        const message = userMessage(
+          fetchError,
+          "Could not load tuition details."
         )
+        setError(message)
+        notify("error", "Could not load tuition details", message)
       } finally {
         setLoading(false)
       }
@@ -244,7 +235,6 @@ export default function TuitionDetailPage() {
 
     if (!phone || !preferredSchedule) {
       notify(
-        setToasts,
         "error",
         "Missing details",
         "Add your phone number and preferred schedule before applying."
@@ -275,7 +265,6 @@ export default function TuitionDetailPage() {
       setApplied(true)
       setShowApplyForm(false)
       notify(
-        setToasts,
         "success",
         "Application submitted",
         "The tutor will review your request soon."
@@ -291,7 +280,7 @@ export default function TuitionDetailPage() {
         setShowApplyForm(false)
       }
 
-      notify(setToasts, "error", "Application not submitted", message)
+      notify("error", "Application not submitted", message)
     } finally {
       setSubmitting(false)
     }
@@ -299,15 +288,6 @@ export default function TuitionDetailPage() {
 
   return (
     <main className="min-h-svh bg-neutral-950 text-white">
-      <ToastViewport
-        toasts={toasts}
-        onDismiss={(toastId) =>
-          setToasts((current) =>
-            current.filter((toast) => toast.id !== toastId)
-          )
-        }
-      />
-
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <Link
           href="/tuitions"

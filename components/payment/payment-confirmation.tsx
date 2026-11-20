@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { AlertCircle, CheckCircle2, Loader2, RefreshCw } from "lucide-react"
 
 import { authClient } from "@/lib/auth-client"
+import { notify, userMessage } from "@/lib/notify"
 import { cn } from "@/lib/utils"
 
 type ConfirmStatus = "confirming" | "active" | "error"
@@ -29,6 +30,10 @@ export function PaymentConfirmation({
     sessionId || initialIsPro ? "" : MISSING_SESSION_MESSAGE
   )
   const [attempt, setAttempt] = useState(0)
+
+  const activeMessage = isTutor
+    ? "Pro access is active. You can post unlimited tuitions now."
+    : "Pro access is active. You now receive priority booking."
 
   useEffect(() => {
     if (!sessionId) return
@@ -63,16 +68,15 @@ export function PaymentConfirmation({
 
         if (!cancelled) {
           setStatus("active")
+          notify.success("Subscription activated!", activeMessage)
           router.refresh()
         }
       } catch (error) {
         if (!cancelled) {
+          const text = userMessage(error, "Could not verify your subscription.")
           setStatus("error")
-          setMessage(
-            error instanceof Error
-              ? error.message
-              : "Could not verify your subscription."
-          )
+          setMessage(text)
+          notify.error("Verification failed", text)
         }
       }
     }
@@ -82,11 +86,7 @@ export function PaymentConfirmation({
     return () => {
       cancelled = true
     }
-  }, [sessionId, router, attempt])
-
-  const activeMessage = isTutor
-    ? "Pro access is active. You can post unlimited tuitions now."
-    : "Pro access is active. You now receive priority booking."
+  }, [sessionId, router, attempt, activeMessage])
 
   const styles =
     status === "active"

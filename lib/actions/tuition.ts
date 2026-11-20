@@ -10,6 +10,9 @@ export const SUBJECT_OPTIONS = [
   "ICT",
   "Accounting",
   "General Science",
+  "Higher Mathematics",
+  "Economics",
+  "Statistics",
   "Other",
 ]
 

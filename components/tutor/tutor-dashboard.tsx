@@ -23,6 +23,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { getTutorStats, type TutorStats } from "@/lib/actions/tuition"
 import { authClient } from "@/lib/auth-client"
+import { notify, userMessage } from "@/lib/notify"
 import { cn } from "@/lib/utils"
 
 export function TutorDashboard() {
@@ -46,11 +47,12 @@ export function TutorDashboard() {
 
         setStats(await getTutorStats(session.session.token))
       } catch (loadError) {
-        setError(
-          loadError instanceof Error
-            ? loadError.message
-            : "Could not load your dashboard statistics."
+        const message = userMessage(
+          loadError,
+          "Could not load your dashboard statistics."
         )
+        setError(message)
+        notify.error("Could not load dashboard statistics", message)
       } finally {
         setLoading(false)
       }

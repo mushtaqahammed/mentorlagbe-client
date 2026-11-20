@@ -1,13 +1,6 @@
 "use client"
 
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type Dispatch,
-  type SetStateAction,
-} from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import {
   AlertCircle,
   AlertTriangle,
@@ -31,7 +24,7 @@ import { UserAvatar } from "@/components/dashboard/user-avatar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
-import { ToastViewport, type ToastItem } from "@/components/ui/toast"
+import { notify, userMessage } from "@/lib/notify"
 import {
   ADMIN_USERS_PAGE_SIZE,
   ADMIN_USER_ROLES,
@@ -52,21 +45,6 @@ const ROLE_OPTIONS = ADMIN_USER_ROLES.map((value) => ({
 }))
 
 type RoleFilter = AdminUserRole | "all"
-
-type SetToasts = Dispatch<SetStateAction<ToastItem[]>>
-
-function notify(
-  setToasts: SetToasts,
-  variant: ToastItem["variant"],
-  title: string,
-  description?: string
-) {
-  const id = Date.now() + Math.random()
-  setToasts((current) => [...current, { id, variant, title, description }])
-  window.setTimeout(() => {
-    setToasts((current) => current.filter((toast) => toast.id !== id))
-  }, 4000)
-}
 
 function formatDate(value: string | null) {
   if (!value) return "—"
@@ -314,7 +292,6 @@ export function AdminUsersManager() {
     role: AdminUserRole
   } | null>(null)
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null)
-  const [toasts, setToasts] = useState<ToastItem[]>([])
 
   const requestIdRef = useRef(0)
 
@@ -366,11 +343,9 @@ export function AdminUsersManager() {
         if (loadError instanceof Error && loadError.name === "AbortError")
           return
         if (requestId !== requestIdRef.current) return
-        setError(
-          loadError instanceof Error
-            ? loadError.message
-            : "Could not load users."
-        )
+        const message = userMessage(loadError, "Could not load users.")
+        setError(message)
+        notify.error("Could not load users", message)
       } finally {
         if (requestId === requestIdRef.current) {
           setLoading(false)
@@ -459,20 +434,13 @@ export function AdminUsersManager() {
         return next
       })
       setPendingUpdate(null)
-      notify(
-        setToasts,
-        "success",
-        "Role updated",
+      notify.success(
+        "Updated successfully!",
         `${updated.name} is now ${updated.role}.`
       )
       await loadUsers({ silent: true })
     } catch (updateError) {
-      notify(
-        setToasts,
-        "error",
-        "Could not update role",
-        updateError instanceof Error ? updateError.message : "Please try again."
-      )
+      notify.error("Could not update role", userMessage(updateError))
     } finally {
       setUpdatingUserId(null)
     }
@@ -790,13 +758,6 @@ export function AdminUsersManager() {
           </>
         )}
       </DashboardPage>
-
-      <ToastViewport
-        toasts={toasts}
-        onDismiss={(id) =>
-          setToasts((current) => current.filter((toast) => toast.id !== id))
-        }
-      />
 
       {pendingUpdate ? (
         <div

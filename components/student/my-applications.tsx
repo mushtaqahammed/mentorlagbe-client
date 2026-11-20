@@ -1,14 +1,6 @@
 "use client"
 
-import {
-  type Dispatch,
-  type MouseEvent,
-  type SetStateAction,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react"
+import { type MouseEvent, useEffect, useMemo, useRef, useState } from "react"
 import Link from "next/link"
 import {
   AlertTriangle,
@@ -39,7 +31,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
-import { ToastViewport, type ToastItem } from "@/components/ui/toast"
+import { notify as uiNotify } from "@/lib/notify"
 import {
   deleteStudentApplication,
   getStudentApplications,
@@ -50,8 +42,6 @@ import {
 import { authClient } from "@/lib/auth-client"
 import { cn } from "@/lib/utils"
 
-type SetToasts = Dispatch<SetStateAction<ToastItem[]>>
-
 const cardClasses =
   "rounded-2xl border border-white/10 bg-neutral-950/60 shadow-lg shadow-black/10"
 const inputClasses =
@@ -59,17 +49,15 @@ const inputClasses =
 const selectClasses = cn(inputClasses, "appearance-none pr-10")
 
 function notify(
-  setToasts: SetToasts,
-  variant: ToastItem["variant"],
+  variant: "success" | "error" | "info",
   title: string,
   description?: string
 ) {
-  const id = Date.now() + Math.random()
-  setToasts((current) => [...current, { id, variant, title, description }])
+  const options = description ? { description } : undefined
 
-  window.setTimeout(() => {
-    setToasts((current) => current.filter((toast) => toast.id !== id))
-  }, 4000)
+  if (variant === "success") uiNotify.success(title, options)
+  else if (variant === "error") uiNotify.error(title, options)
+  else uiNotify.info(title, options)
 }
 
 async function getStudentToken() {
@@ -191,7 +179,6 @@ export function MyApplications() {
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [sortOrder, setSortOrder] = useState("newest")
-  const [toasts, setToasts] = useState<ToastItem[]>([])
   const [deleteTarget, setDeleteTarget] = useState<StudentApplication | null>(
     null
   )
@@ -221,7 +208,7 @@ export function MyApplications() {
 
         if (active && showErrorState) setLoadError(message)
         if (active) {
-          notify(setToasts, "error", "Could not load applications", message)
+          notify("error", "Could not load applications", message)
         }
       } finally {
         if (active) setLoading(false)
@@ -283,7 +270,6 @@ export function MyApplications() {
       await deleteStudentApplication(deleteTarget.id, token)
 
       notify(
-        setToasts,
         "success",
         "Application cancelled",
         `Your application for ${deleteTarget.tuitionTitle} has been removed.`
@@ -293,7 +279,6 @@ export function MyApplications() {
       refreshSilently()
     } catch (deleteFailure) {
       notify(
-        setToasts,
         "error",
         "Cancellation failed",
         deleteFailure instanceof Error
@@ -310,13 +295,6 @@ export function MyApplications() {
       title="My Applications"
       description="Track your tuition applications and stay updated on your application status."
     >
-      <ToastViewport
-        toasts={toasts}
-        onDismiss={(id) =>
-          setToasts((current) => current.filter((toast) => toast.id !== id))
-        }
-      />
-
       <div className="mt-8 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold text-white">

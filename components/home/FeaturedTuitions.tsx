@@ -25,6 +25,7 @@ import {
   type FeaturedTuition,
   type FeaturedTuitionsResponse,
 } from "@/lib/tuitions/featured-types"
+import { notify, userMessage } from "@/lib/notify"
 import { cn } from "@/lib/utils"
 
 const numberFormatter = new Intl.NumberFormat("en-BD")
@@ -322,11 +323,12 @@ export function FeaturedTuitions() {
         if (fetchError instanceof Error && fetchError.name === "AbortError") {
           return
         }
-        setError(
-          fetchError instanceof Error
-            ? fetchError.message
-            : "Could not load featured tuitions."
+        const message = userMessage(
+          fetchError,
+          "Could not load featured tuitions."
         )
+        setError(message)
+        notify.error("Could not load featured tuitions", message)
       } finally {
         if (!controller.signal.aborted) setLoading(false)
       }

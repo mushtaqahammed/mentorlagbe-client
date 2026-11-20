@@ -1,14 +1,6 @@
 "use client"
 
-import {
-  type Dispatch,
-  type MouseEvent,
-  type SetStateAction,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react"
+import { type MouseEvent, useEffect, useMemo, useRef, useState } from "react"
 import {
   AlertTriangle,
   BookOpen,
@@ -34,7 +26,7 @@ import { DashboardPage } from "@/components/dashboard/dashboard-page"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
-import { ToastViewport, type ToastItem } from "@/components/ui/toast"
+import { notify as uiNotify } from "@/lib/notify"
 import {
   getTutorApplicants,
   updateApplicationStatus,
@@ -45,8 +37,6 @@ import {
 } from "@/lib/actions/applications"
 import { authClient } from "@/lib/auth-client"
 import { cn } from "@/lib/utils"
-
-type SetToasts = Dispatch<SetStateAction<ToastItem[]>>
 
 type ReviewTarget = {
   applicant: Applicant
@@ -60,17 +50,15 @@ const inputClasses =
 const selectClasses = cn(inputClasses, "appearance-none pr-10")
 
 function notify(
-  setToasts: SetToasts,
-  variant: ToastItem["variant"],
+  variant: "success" | "error" | "info",
   title: string,
   description?: string
 ) {
-  const id = Date.now() + Math.random()
-  setToasts((current) => [...current, { id, variant, title, description }])
+  const options = description ? { description } : undefined
 
-  window.setTimeout(() => {
-    setToasts((current) => current.filter((toast) => toast.id !== id))
-  }, 4000)
+  if (variant === "success") uiNotify.success(title, options)
+  else if (variant === "error") uiNotify.error(title, options)
+  else uiNotify.info(title, options)
 }
 
 function formatCount(value: number) {
@@ -253,7 +241,6 @@ export function ManageApplicants() {
   const [search, setSearch] = useState("")
   const [tuitionFilter, setTuitionFilter] = useState("all")
   const [statusFilter, setStatusFilter] = useState("all")
-  const [toasts, setToasts] = useState<ToastItem[]>([])
   const [reviewTarget, setReviewTarget] = useState<ReviewTarget | null>(null)
   const [busyId, setBusyId] = useState<string | null>(null)
   const [reloadKey, setReloadKey] = useState(0)
@@ -290,7 +277,7 @@ export function ManageApplicants() {
 
         if (active && showErrorState) setLoadError(message)
         if (active) {
-          notify(setToasts, "error", "Could not load applicants", message)
+          notify("error", "Could not load applicants", message)
         }
       } finally {
         if (active) setLoading(false)
@@ -365,7 +352,6 @@ export function ManageApplicants() {
       )
 
       notify(
-        setToasts,
         "success",
         reviewTarget.status === "accepted"
           ? "Application accepted"
@@ -377,7 +363,6 @@ export function ManageApplicants() {
       refreshSilently()
     } catch (reviewFailure) {
       notify(
-        setToasts,
         "error",
         "Status update failed",
         reviewFailure instanceof Error
@@ -394,13 +379,6 @@ export function ManageApplicants() {
       title="Manage Applicants"
       description="Review student applications and shortlist the best matches for your tuitions."
     >
-      <ToastViewport
-        toasts={toasts}
-        onDismiss={(id) =>
-          setToasts((current) => current.filter((toast) => toast.id !== id))
-        }
-      />
-
       <div className="mt-8 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold text-white">

@@ -23,6 +23,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { getStudentStats, type StudentStats } from "@/lib/actions/applications"
 import { authClient } from "@/lib/auth-client"
+import { notify, userMessage } from "@/lib/notify"
 import { cn } from "@/lib/utils"
 
 export function StudentDashboard() {
@@ -50,11 +51,12 @@ export function StudentDashboard() {
 
         setStats(await getStudentStats(session.session.token))
       } catch (loadError) {
-        setError(
-          loadError instanceof Error
-            ? loadError.message
-            : "Could not load your dashboard statistics."
+        const message = userMessage(
+          loadError,
+          "Could not load your dashboard statistics."
         )
+        setError(message)
+        notify.error("Could not load dashboard statistics", message)
       } finally {
         setLoading(false)
       }

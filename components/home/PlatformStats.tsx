@@ -12,6 +12,7 @@ import {
 } from "lucide-react"
 
 import { Skeleton } from "@/components/ui/skeleton"
+import { notify, userMessage } from "@/lib/notify"
 import type { PlatformStats } from "@/lib/platform/stats"
 import { cn } from "@/lib/utils"
 
@@ -227,11 +228,12 @@ export function PlatformStats() {
         if (fetchError instanceof Error && fetchError.name === "AbortError") {
           return
         }
-        setError(
-          fetchError instanceof Error
-            ? fetchError.message
-            : "Could not load platform statistics."
+        const message = userMessage(
+          fetchError,
+          "Could not load platform statistics."
         )
+        setError(message)
+        notify.error("Could not load platform statistics", message)
       } finally {
         if (!controller.signal.aborted) setLoading(false)
       }

@@ -14,6 +14,7 @@ import { AdminStatsCard } from "@/components/admin/admin-stats-card"
 import { DashboardPage } from "@/components/dashboard/dashboard-page"
 import { Button } from "@/components/ui/button"
 import type { AdminStats, AdminStatsError } from "@/lib/admin/types"
+import { notify, userMessage } from "@/lib/notify"
 import { cn } from "@/lib/utils"
 
 const numberFormatter = new Intl.NumberFormat("en-BD")
@@ -53,11 +54,12 @@ export function AdminDashboard() {
         if (!cancelled) setStats(data as AdminStats)
       } catch (loadError) {
         if (!cancelled) {
-          setError(
-            loadError instanceof Error
-              ? loadError.message
-              : "Could not load platform statistics."
+          const message = userMessage(
+            loadError,
+            "Could not load platform statistics."
           )
+          setError(message)
+          notify.error("Could not load platform statistics", message)
         }
       } finally {
         if (!cancelled) setLoading(false)

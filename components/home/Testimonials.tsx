@@ -8,6 +8,7 @@ import type {
   Testimonial,
   TestimonialsResponse,
 } from "@/lib/testimonials/types"
+import { notify, userMessage } from "@/lib/notify"
 import { cn } from "@/lib/utils"
 
 function getInitials(name: string) {
@@ -211,11 +212,9 @@ export function Testimonials() {
         if (fetchError instanceof Error && fetchError.name === "AbortError") {
           return
         }
-        setError(
-          fetchError instanceof Error
-            ? fetchError.message
-            : "Could not load testimonials."
-        )
+        const message = userMessage(fetchError, "Could not load testimonials.")
+        setError(message)
+        notify.error("Could not load testimonials", message)
       } finally {
         if (!controller.signal.aborted) setLoading(false)
       }
