@@ -44,9 +44,9 @@ export function Banner() {
               "animate-[hero-fade-up_0.7s_ease-out_90ms_both] motion-reduce:animate-none"
             )}
           >
-            Find your <span className="text-lime-400">ideal tutor</span> or
+            Find Your <span className="text-lime-400">Ideal Tutor</span> or
             <br className="hidden lg:block" />{" "}
-            <span className="text-lime-400">mentorship batch</span> today
+            <span className="text-lime-400">Mentorship Batch</span> Today
           </h1>
 
           <p

@@ -71,13 +71,11 @@ mentorlagbe-client/
       tuitions/[id]/route.ts                 # public detail proxy
       featured-tuitions/route.ts             # featured list proxy
       platform/stats/route.ts                # public stats proxy
-      testimonials/route.ts                  # public list + student/tutor submission
       admin/stats/route.ts                   # admin-only stats proxy
       admin/users/route.ts                   # admin-only user list proxy
       admin/users/[id]/role/route.ts         # admin-only role change proxy
       admin/tuitions/route.ts                # admin-only tuition list proxy
       admin/tuitions/[id]/{approve,reject}/route.ts + handle-approval.ts
-      admin/testimonials/route.ts, admin/testimonials/[id]/route.ts
       admin/transactions/route.ts            # admin-only transaction list proxy
       profile/route.ts                       # GET/PATCH own profile (Better Auth)
       checkout-sessions/route.ts             # POST: create Stripe Checkout Session
@@ -102,7 +100,7 @@ mentorlagbe-client/
     auth.ts, auth-client.ts                  # Better Auth server config + shared client
     core/server.ts, backend-api.ts, session.ts
     actions/{applications,tuition}.ts        # "use server" actions
-    admin/*, tuitions/*, testimonials/*, platform/stats.ts
+    admin/*, tuitions/*, platform/stats.ts
     imgbb.ts, notify.ts, plans.ts, profile.ts, stripe.ts, subscription.ts, utils.ts
     dashboard-menu.ts                        # role-based menu definitions
   scripts/seed-tuitions.ts
@@ -118,7 +116,7 @@ mentorlagbe-client/
 
 | Route | File | Description |
 | --- | --- | --- |
-| `/` | `app/page.tsx` | Marketing home: Banner, TopSubjects, HowMentorLagbeWorks, PlatformStats, FeaturedTuitions, Testimonials |
+| `/` | `app/page.tsx` | Marketing home: Banner, FeaturedTuitions, Pricing, HowMentorLagbeWorks, TopSubjects, PlatformStats |
 | `/tuitions` | `app/tuitions/page.tsx` | Public listing; client search, mode filter, `?subject=` prefill from home subject cards |
 | `/tuitions/[id]` | `app/tuitions/[id]/page.tsx` | Detail page with student application form |
 | `/all-tuitions` | `app/all-tuitions/page.tsx` | Redirects to `/tuitions` |
@@ -144,7 +142,7 @@ Every page route has a sibling `loading.tsx` using skeletons from `components/lo
 - `components/footer.tsx`: CTA banner, quick links, contact info, social icons, legal links (currently both point to `/`).
 - `components/site-chrome.tsx`, `theme-provider.tsx`, `logo.tsx`, `ui/toast-container.tsx`: chrome, theme, branding, notifications.
 
-**Home** (`components/home/`): `banner.tsx` (hero + local image), `TopSubjects.tsx` (subject links with `?subject=`), `HowMentorLagbeWorks.tsx` (4-step student and tutor flows), `PlatformStats.tsx` (client-fetched counters with count-up animation), `FeaturedTuitions.tsx` (client-fetched cards), `Testimonials.tsx` (client-fetched approved feedback).
+**Home** (`components/home/`): `banner.tsx` (hero + local image), `TopSubjects.tsx` (subject links with `?subject=`), `HowMentorLagbeWorks.tsx` (4-step student and tutor flows), `PlatformStats.tsx` (client-fetched counters with count-up animation), `FeaturedTuitions.tsx` (client-fetched cards from `/api/featured-tuitions`), `Pricing.tsx` (Free vs Pro summary for tutors/students using `lib/plans.ts`, CTA to `/payment`).
 
 **Auth** (`components/auth/auth-form.tsx`): `AuthShell` (two-panel layout), `AuthInput` (icon + show/hide password), `AuthSelect`, `SubmitButton`, `GoogleButton`, `Divider`. `session-hydrator.tsx` seeds the shared client session store.
 
@@ -171,7 +169,7 @@ Every page route has a sibling `loading.tsx` using skeletons from `components/lo
 
 - **Student**: live overview (total applied, accepted, pending, current plan), browse/apply on `/tuitions/[id]` (phone, preferred schedule, optional note), list/search/filter/sort applications, cancel only pending applications, save/un-save tuitions from cards and the detail page, manage bookmarks at `/dashboard/bookmarks` (search, sort, usage, remove), view profile and subscription.
 - **Tutor**: overview (total posts, active+approved posts, applicants, plan), create tuition with banner upload and free-plan cap of 2 posts (verified through `/api/subscription/status` on every submit), edit/close/delete own posts, review applicants (accept/reject), profile/subscription.
-- **Admin**: platform stats (users, tutors, pending/approved posts, Stripe revenue), paginated user search with role promotions (cannot change own role), paginated tuition approvals with subject/status filters, paginated transactions with role/plan filters, admin testimonial API routes (no dedicated UI yet), profile/subscription.
+- **Admin**: platform stats (users, tutors, pending/approved posts, Stripe revenue), paginated user search with role promotions (cannot change own role), paginated tuition approvals with subject/status filters, paginated transactions with role/plan filters, profile/subscription.
 
 ## 9. API Integration (Frontend Endpoints)
 
@@ -184,12 +182,10 @@ All route handlers set `runtime = "nodejs"` where MongoDB/Stripe are involved; d
 | `/api/tuitions/[id]` | GET | Proxies one public tuition; 404 for hidden/unavailable posts |
 | `/api/featured-tuitions` | GET | Proxies backend featured posts (max 6) |
 | `/api/platform/stats` | GET | Proxies public counters |
-| `/api/testimonials` | GET, POST | List approved feedback; submit feedback (Student/Tutor, session required) |
 | `/api/profile` | GET, PATCH | Read/update own profile via Better Auth; PATCH whitelists `name`, `phone`, `image` |
-| `/api/admin/stats`, `/api/admin/users`, `/api/admin/tuitions`, `/api/admin/transactions`, `/api/admin/testimonials` | GET | Admin-only proxies; server-side session/role check (`requireAdmin()` in `lib/admin/api-auth.ts`, direct `getSession()` check in `/api/admin/stats`) before forwarding |
+| `/api/admin/stats`, `/api/admin/users`, `/api/admin/tuitions`, `/api/admin/transactions` | GET | Admin-only proxies; server-side session/role check (`requireAdmin()` in `lib/admin/api-auth.ts`, direct `getSession()` check in `/api/admin/stats`) before forwarding |
 | `/api/admin/users/[id]/role` | PATCH | Admin role change proxy |
 | `/api/admin/tuitions/[id]/approve`, `/.../reject` | PATCH | Admin approval decision fixed by the route path, not the body |
-| `/api/admin/testimonials/[id]` | PATCH | Admin testimonial moderation |
 | `/api/checkout-sessions` | POST | Creates Stripe subscription Checkout Session, responds 303 redirect to Stripe |
 | `/api/subscription/confirm` | POST | Verifies `sessionId` with Stripe and grants Pro; maps error codes to HTTP statuses |
 | `/api/subscription/status` | GET | Reads current subscription state for the signed-in user |
@@ -198,7 +194,7 @@ All route handlers set `runtime = "nodejs"` where MongoDB/Stripe are involved; d
 
 Bookmark state is shared through `components/bookmarks/bookmark-provider.tsx` (mounted in the root layout): it loads bookmarks once for authenticated students, exposes optimistic add/remove with rollback and per-tuition pending guards, and is consumed by `components/tuitions/bookmark-button.tsx` and `components/student/bookmarks.tsx`. `lib/actions/bookmarks.ts` wraps the Express bookmark endpoints with `authFetch`.
 
-Server-side data helpers call the Express backend directly with `BACKEND_API_URL` (default `http://localhost:5000`): `lib/actions/tuition.ts` (create/count/list/update/status/delete tuitions, stats, apply), `lib/actions/applications.ts` (student/tutor stats, applications, cancel, review), `lib/admin/*` (stats/users/tuitions/transactions), `lib/testimonials/store.ts`, `lib/platform/stats.ts`, `lib/tuitions/featured.ts`, `lib/subscription.ts` (internal payment/subscription endpoints), and `lib/backend-api.ts` (shared request helper with `x-internal-secret` and user/admin headers).
+Server-side data helpers call the Express backend directly with `BACKEND_API_URL` (default `http://localhost:5000`): `lib/actions/tuition.ts` (create/count/list/update/status/delete tuitions, stats, apply), `lib/actions/applications.ts` (student/tutor stats, applications, cancel, review), `lib/admin/*` (stats/users/tuitions/transactions), `lib/platform/stats.ts`, `lib/tuitions/featured.ts`, `lib/subscription.ts` (internal payment/subscription endpoints), and `lib/backend-api.ts` (shared request helper with `x-internal-secret` and user/admin headers).
 
 ## 10. Frontend State Management and Data Fetching
 
@@ -215,7 +211,6 @@ Server-side data helpers call the Express backend directly with `BACKEND_API_URL
 - Tuition form: all fields required, fee parsed from free text (`parseAmount`), days >= 1, tutor role check, free-plan limit check (2 posts), 5 MB image limit, image must upload before the tuition is created; uses `notify.promise` for the create action.
 - Profile form: name 2-80 chars, phone `/^\+?[0-9][0-9\s-]{5,19}$/`, image URL must be http(s); PATCH `/api/profile` whitelists fields.
 - Application form: phone and preferred schedule required; note optional; backend duplicate-application error is surfaced and treated as "already applied".
-- Testimonial route: rating integer 1-5, message 10-600 characters; 409 conflict mapped to a friendly message.
 - Errors: `lib/notify.ts#userMessage` hides network/technical noise; API helpers parse `{ error }` JSON with a fallback message; `app/error.tsx` and `app/not-found.tsx` are branded recovery pages.
 
 ## 12. Image Upload (Frontend Perspective)
@@ -294,15 +289,14 @@ No Dockerfile or custom server is configured for the client.
 2. Google OAuth button is wired but inactive because `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` are not configured.
 3. Stripe webhook needs `STRIPE_WEBHOOK_SECRET`; `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` is set but unused by code.
 4. Bookmarks are stored in a dedicated `bookmarks` collection on the backend (one row per student/tuition, compound unique index), with a free-student cap of 5 enforced server-side. The Pro Student "Save tutors and tuition posts" benefit is only partially covered: tuition bookmarks exist, but tutor bookmarks do not.
-5. Testimonial submission and admin moderation endpoints exist, but no frontend UI lets a Student/Tutor submit feedback or an Admin review it (only public display exists).
-6. `/api/admin/stats` and `requireAdmin()` duplicate role-check logic; the admin proxies depend on both the Next.js session and Express internal headers.
-7. `lib/dashboard-menu.ts` still contains logic for a `subscription` menu item and an "About" page/link no longer exists in the current nav; `/dashboard` renders `null` and relies on the client redirect.
-8. Footer legal links (Terms of Service, Privacy Policy) point to `/`.
-9. `globals.css` contains only Tailwind import, animation/keyframe and toast styling - no shadcn theme token block (`components.json` declares `cssVariables: true`), so token-based utility classes may have no CSS variables backing them.
-10. Theme defaults differ: `app/layout.tsx` passes `defaultTheme="light"` while `components/theme-provider.tsx` defaults to `"system"` (layout prop wins).
-11. `components/home/PlatformStats.tsx`, `Testimonials.tsx`, `FeaturedTuitions.tsx` and the listings page fetch on the client; failures are toast-only with retry buttons.
-12. Client-side validation is duplicated across forms and route handlers (intentional defence in depth); the backend remains the authority for ownership and roles.
-13. Image upload endpoints keep the ImgBB key server-side; the unauthenticated sign-up upload endpoint relies on an in-memory per-instance rate limit, which resets on restart and is not shared across instances.
-14. Seed script requires at least one existing Tutor account and uses `$setOnInsert`, so it will not update already-seeded posts.
+5. `/api/admin/stats` and `requireAdmin()` duplicate role-check logic; the admin proxies depend on both the Next.js session and Express internal headers.
+6. `lib/dashboard-menu.ts` still contains logic for a `subscription` menu item and an "About" page/link no longer exists in the current nav; `/dashboard` renders `null` and relies on the client redirect.
+7. Footer legal links (Terms of Service, Privacy Policy) point to `/`.
+8. `globals.css` contains only Tailwind import, animation/keyframe and toast styling - no shadcn theme token block (`components.json` declares `cssVariables: true`), so token-based utility classes may have no CSS variables backing them.
+9. Theme defaults differ: `app/layout.tsx` passes `defaultTheme="light"` while `components/theme-provider.tsx` defaults to `"system"` (layout prop wins).
+10. `components/home/PlatformStats.tsx`, `FeaturedTuitions.tsx` and the listings page fetch on the client; failures are toast-only with retry buttons.
+11. Client-side validation is duplicated across forms and route handlers (intentional defence in depth); the backend remains the authority for ownership and roles.
+12. Image upload endpoints keep the ImgBB key server-side; the unauthenticated sign-up upload endpoint relies on an in-memory per-instance rate limit, which resets on restart and is not shared across instances.
+13. Seed script requires at least one existing Tutor account and uses `$setOnInsert`, so it will not update already-seeded posts.
 
 This README was written from the source code in this repository (Next.js 16 App Router). When adding features, update both this file and the backend README as appropriate.

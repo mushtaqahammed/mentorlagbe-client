@@ -433,10 +433,10 @@ export function FeaturedTuitions() {
 
         <div className="mt-12 flex justify-center">
           <Link
-            href="/all-tuitions"
+            href="/tuitions"
             className="group/button inline-flex h-12 items-center justify-center gap-2 rounded-full bg-lime-400 px-7 text-sm font-semibold text-neutral-950 shadow-lg shadow-lime-400/20 transition-all duration-200 hover:-translate-y-0.5 hover:bg-lime-300 hover:shadow-xl hover:shadow-lime-400/30 focus-visible:ring-4 focus-visible:ring-lime-400/40 focus-visible:outline-none"
           >
-            See All Tuitions
+            Browse All Tuitions
             <ArrowRight
               className="size-4 transition-transform group-hover/button:translate-x-1"
               aria-hidden="true"

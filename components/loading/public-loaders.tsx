@@ -160,64 +160,10 @@ export function TuitionCardSkeleton() {
   )
 }
 
-function TestimonialCardSkeleton() {
-  return (
-    <CardSkeleton
-      header={<Skeleton className="size-7 rounded-lg bg-white/10" />}
-      footer={
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <SkeletonAvatar />
-            <div className="space-y-2">
-              <Skeleton className="h-3 w-24 bg-white/10" />
-              <Skeleton className="h-2.5 w-14 bg-white/10" />
-            </div>
-          </div>
-          <Skeleton className="h-4 w-24 bg-white/10" />
-        </div>
-      }
-    >
-      <Skeleton className="mt-5 h-3 w-full bg-white/10" />
-      <Skeleton className="mt-2 h-3 w-full bg-white/10" />
-      <Skeleton className="mt-2 h-3 w-2/3 bg-white/10" />
-      <Skeleton className="mt-8 h-3 w-1/2 bg-white/10" />
-    </CardSkeleton>
-  )
-}
-
 export function HomeLoader() {
   return (
     <PageLoader label="Loading home page" contentClassName="max-w-none px-0 py-0">
       <BannerSkeleton />
-
-      <LoaderSection>
-        <SectionHeadingSkeleton />
-        <div className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {[0, 1, 2, 3].map((subject) => (
-            <SubjectCardSkeleton key={subject} />
-          ))}
-        </div>
-      </LoaderSection>
-
-      <LoaderSection>
-        <SectionHeadingSkeleton />
-        <div className="mt-12 space-y-8 lg:mt-14 lg:space-y-10">
-          <WorkflowSkeleton />
-          <WorkflowSkeleton />
-        </div>
-      </LoaderSection>
-
-      <LoaderSection>
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-          <SectionHeadingSkeleton />
-          <Skeleton className="h-9 w-44 rounded-full bg-white/10" />
-        </div>
-        <div className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {[0, 1, 2, 3].map((stat) => (
-            <StatCardSkeleton key={stat} />
-          ))}
-        </div>
-      </LoaderSection>
 
       <LoaderSection>
         <SectionHeadingSkeleton />
@@ -233,9 +179,37 @@ export function HomeLoader() {
 
       <LoaderSection>
         <SectionHeadingSkeleton />
-        <div className="mt-10 grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
-          {[0, 1, 2].map((testimonial) => (
-            <TestimonialCardSkeleton key={testimonial} />
+        <div className="mt-10 grid gap-6 lg:grid-cols-2">
+          <PricingCardSkeleton />
+          <PricingCardSkeleton />
+        </div>
+      </LoaderSection>
+
+      <LoaderSection>
+        <SectionHeadingSkeleton />
+        <div className="mt-12 space-y-8 lg:mt-14 lg:space-y-10">
+          <WorkflowSkeleton />
+          <WorkflowSkeleton />
+        </div>
+      </LoaderSection>
+
+      <LoaderSection>
+        <SectionHeadingSkeleton />
+        <div className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {[0, 1, 2, 3].map((subject) => (
+            <SubjectCardSkeleton key={subject} />
+          ))}
+        </div>
+      </LoaderSection>
+
+      <LoaderSection>
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+          <SectionHeadingSkeleton />
+          <Skeleton className="h-9 w-44 rounded-full bg-white/10" />
+        </div>
+        <div className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {[0, 1, 2, 3].map((stat) => (
+            <StatCardSkeleton key={stat} />
           ))}
         </div>
       </LoaderSection>

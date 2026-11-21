@@ -104,7 +104,7 @@ export function Navbar() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-white/[0.08] bg-neutral-950/90 text-white shadow-lg shadow-black/10 backdrop-blur-xl">
-      <nav className="mx-auto flex h-[76px] max-w-7xl items-center justify-between gap-5 px-4 sm:px-6 lg:px-8">
+      <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-5 px-4 sm:px-6 lg:px-8">
         {/* Logo */}
         <div className="shrink-0">
           <Logo />

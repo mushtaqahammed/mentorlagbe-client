@@ -227,9 +227,9 @@ export function Footer() {
         {/* Giant wordmark — signature element from the reference design */}
         <div
           aria-hidden="true"
-          className="pointer-events-none -mb-4 flex justify-center overflow-hidden select-none sm:-mb-7 lg:-mb-10"
+          className="pointer-events-none -mb-3 flex justify-center overflow-hidden select-none sm:-mb-5 lg:-mb-6"
         >
-          <span className="bg-gradient-to-b from-white/10 to-white/[0.02] bg-clip-text text-[clamp(3.5rem,12vw,11rem)] leading-[0.85] font-black tracking-tighter text-transparent">
+          <span className="bg-gradient-to-b from-white/[0.07] to-white/[0.015] bg-clip-text text-[clamp(3rem,9vw,8rem)] leading-[0.85] font-black tracking-tighter text-transparent">
             MentorLagbe
           </span>
         </div>

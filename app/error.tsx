@@ -25,7 +25,7 @@ export default function Error({
 
       <main
         aria-labelledby="error-heading"
-        className="relative isolate flex min-h-[calc(100svh-76px)] items-center overflow-hidden bg-neutral-950 py-16 text-white sm:py-20 lg:py-24"
+        className="relative isolate flex min-h-[calc(100svh-4rem)] items-center overflow-hidden bg-neutral-950 py-16 text-white sm:py-20 lg:py-24"
       >
         {/* Ambient brand glows, matching the public site sections */}
         <div
