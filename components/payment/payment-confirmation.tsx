@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { AlertCircle, CheckCircle2, Loader2, RefreshCw } from "lucide-react"
 
-import { authClient } from "@/lib/auth-client"
+import { refreshSession } from "@/lib/auth-client"
 import { notify, userMessage } from "@/lib/notify"
 import { cn } from "@/lib/utils"
 
@@ -64,7 +64,7 @@ export function PaymentConfirmation({
 
         // Update Better Auth's shared session store so the navbar, dashboard
         // and tuition form see Pro without a sign-out/sign-in cycle.
-        await authClient.getSession({ query: { disableCookieCache: true } })
+        refreshSession()
 
         if (!cancelled) {
           setStatus("active")

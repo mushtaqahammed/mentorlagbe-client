@@ -58,9 +58,6 @@ export default function SignUpPage() {
         role: data.role,
         // Saved with the account itself, so no follow-up request is needed.
         image: data.image,
-
-        // Callback URL
-        callbackURL: "/",
       })
 
       if (signUpError) {
@@ -71,13 +68,8 @@ export default function SignUpPage() {
         return
       }
 
-      // The navbar reads the shared session store. Force a fresh read so the
-      // picture saved during sign-up appears immediately.
-      await authClient
-        .getSession({ query: { disableCookieCache: true } })
-        .catch(() => null)
-      router.refresh()
-
+      // Sign-up signals the shared session atom, so the navbar picks up the
+      // new user and image without a second session request here.
       notify.success("Account created successfully!", {
         description: "Redirecting you home...",
       })

@@ -1,9 +1,11 @@
 import { Geist, Geist_Mono } from "next/font/google"
 
 import "./globals.css"
+import { SessionHydrator } from "@/components/auth/session-hydrator"
 import { SiteChrome } from "@/components/site-chrome"
 import { ThemeProvider } from "@/components/theme-provider"
 import { AppToastContainer } from "@/components/ui/toast-container"
+import { getRequestSession } from "@/lib/session"
 import { cn } from "@/lib/utils"
 
 const geist = Geist({
@@ -18,11 +20,13 @@ const geistMono = Geist_Mono({
   display: "swap",
 })
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const session = await getRequestSession().catch(() => null)
+
   return (
     <html
       lang="en"
@@ -36,6 +40,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
+          <SessionHydrator session={session} />
           <SiteChrome>{children}</SiteChrome>
           <AppToastContainer />
         </ThemeProvider>

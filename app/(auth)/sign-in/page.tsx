@@ -32,7 +32,6 @@ export default function SignInPage() {
       const { error: signInError } = await authClient.signIn.email({
         email: data.email,
         password: data.password,
-        callbackURL: "/",
       })
 
       if (signInError) {
@@ -43,12 +42,8 @@ export default function SignInPage() {
         return
       }
 
-      // Refresh the shared session so the navbar immediately uses the
-      // authenticated user's picture (not a stale cached session).
-      await authClient
-        .getSession({ query: { disableCookieCache: true } })
-        .catch(() => null)
-
+      // The sign-in endpoint already signals the shared session atom, so every
+      // `useSession()` subscriber updates without a second request here.
       notify.success("Welcome back!")
       router.push("/")
       router.refresh()

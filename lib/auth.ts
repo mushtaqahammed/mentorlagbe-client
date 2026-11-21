@@ -17,6 +17,17 @@ export const auth = betterAuth({
     enabled: true,
   },
 
+  // Keeps a short-lived, signed copy of the session in a cookie so a browser
+  // refresh does not need a database lookup before the Navbar can render.
+  // Endpoints that need authoritative user data already opt out with
+  // `disableCookieCache: true`.
+  session: {
+    cookieCache: {
+      enabled: true,
+      maxAge: 5 * 60,
+    },
+  },
+
   user: {
     additionalFields: {
       role: {

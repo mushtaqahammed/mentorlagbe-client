@@ -102,25 +102,34 @@ const labelClasses = "text-sm font-medium text-neutral-200"
 
 const MAX_BANNER_BYTES = 5 * 1024 * 1024
 
-async function uploadBannerImage(file: File) {
-  const body = new FormData()
-  body.append("image", file)
+/**
+ * Upload through our own route handler so the ImgBB key stays on the server.
+ * The route responds with `{ url, deleteUrl }`; return the hosted URL so the
+ * caller can send it to the API that persists the tuition in MongoDB.
+ */
+async function uploadBannerImage(file: File): Promise<string> {
+  const formData = new FormData()
+  formData.append("image", file)
 
-  const response = await fetch("/api/uploads/imgbb", {
-    method: "POST",
-    body,
-  })
-
-  const data = (await response.json().catch(() => null)) as {
-    url?: string
-    error?: string
-  } | null
-
-  if (!response.ok || !data?.url) {
-    throw new Error(data?.error || "Could not upload the banner image.")
+  let response: Response
+  try {
+    response = await fetch("/api/uploads/imgbb", {
+      method: "POST",
+      body: formData,
+    })
+  } catch {
+    throw new Error("Could not reach the image upload service.")
   }
 
-  return data.url
+  const result = (await response.json().catch(() => null)) as
+    | { url?: string; error?: string }
+    | null
+
+  if (!response.ok || !result?.url) {
+    throw new Error(result?.error || "Image upload failed. Please try again.")
+  }
+
+  return result.url
 }
 
 /**
@@ -253,6 +262,7 @@ export function PostTuitionForm() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [isDragging, setIsDragging] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
   const [subscription, setSubscription] = useState<SubscriptionState | null>(
     null
   )
@@ -341,6 +351,10 @@ export function PostTuitionForm() {
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
+    // Never create a tuition while an image is still being uploaded, and
+    // ignore duplicate submit clicks while a request is already in flight.
+    if (isSubmitting || isUploading) return
+
     let createStarted = false
 
     try {
@@ -407,17 +421,25 @@ export function PostTuitionForm() {
         return
       }
 
-      // The banner is optional. If image hosting is unavailable, publish the
-      // post without it instead of blocking the whole submission.
+      // A selected image must finish uploading before the tuition is created,
+      // otherwise the hosted URL would never reach the database.
       let bannerImage = ""
       if (imageFile) {
+        setIsUploading(true)
+        const uploadToast = notify.loading("Uploading banner image...")
         try {
           bannerImage = await uploadBannerImage(imageFile)
-        } catch {
-          notify.warning(
-            "Banner not uploaded",
-            "Your tuition will be published without a banner image."
+          notify.dismiss(uploadToast)
+          notify.success("Banner uploaded", "Your image is ready to publish.")
+        } catch (error) {
+          notify.dismiss(uploadToast)
+          notify.error(
+            "Banner upload failed",
+            userMessage(error, "Could not upload the image. Please try again.")
           )
+          return
+        } finally {
+          setIsUploading(false)
         }
       }
 
@@ -432,16 +454,17 @@ export function PostTuitionForm() {
         {
           loading: "Publishing your tuition...",
           success: "Created successfully!",
-          error: (error: unknown) => userMessage(error, "Could not post this tuition."),
+          error: (error: unknown) =>
+            userMessage(error, "Could not post this tuition."),
         }
       )
 
       router.push("/dashboard/tutor/my-tuitions")
       router.refresh()
     } catch (error) {
-      // notify.promise already reports failures from the create request; only
-      // earlier steps (validation, subscription check, banner upload) need a
-      // separate notification.
+      // notify.promise already reports failures from the create request;
+      // validation and subscription errors notify above, and a failed banner
+      // upload returns before this point.
       if (!createStarted) {
         notify.error(
           "Could not post this tuition",
@@ -690,6 +713,7 @@ export function PostTuitionForm() {
               id="bannerImage"
               type="file"
               onChange={handleFileInput}
+              disabled={isUploading}
               className="sr-only"
               aria-labelledby="banner-label"
             />
@@ -706,13 +730,24 @@ export function PostTuitionForm() {
                 </div>
                 <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 p-3">
                   <p className="min-w-0 truncate text-xs text-neutral-400">
-                    {imageFile?.name || "Selected banner"}
+                    {isUploading ? (
+                      <span className="inline-flex items-center gap-1.5 text-lime-300">
+                        <Loader2
+                          className="size-3.5 animate-spin"
+                          aria-hidden="true"
+                        />
+                        Uploading to ImgBB...
+                      </span>
+                    ) : (
+                      imageFile?.name || "Selected banner"
+                    )}
                   </p>
                   <div className="flex items-center gap-2">
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
+                      disabled={isUploading}
                       onClick={() => fileInputRef.current?.click()}
                       className="h-8 gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 text-xs text-white hover:bg-white/10"
                     >
@@ -722,6 +757,7 @@ export function PostTuitionForm() {
                       type="button"
                       variant="ghost"
                       size="sm"
+                      disabled={isUploading}
                       onClick={clearImage}
                       className="h-8 gap-1.5 rounded-lg border border-rose-400/20 bg-rose-400/5 px-3 text-xs text-rose-300 hover:bg-rose-400/15 hover:text-rose-200"
                     >
@@ -764,6 +800,7 @@ export function PostTuitionForm() {
                 </p>
                 <Button
                   type="button"
+                  disabled={isUploading}
                   onClick={() => fileInputRef.current?.click()}
                   className="mt-5 h-9 gap-2 rounded-xl border border-white/15 bg-white/5 px-4 text-xs font-semibold text-white hover:border-lime-400/40 hover:bg-lime-400/10 hover:text-lime-200"
                 >
@@ -783,7 +820,7 @@ export function PostTuitionForm() {
             <Button
               type="button"
               variant="outline"
-              disabled={isSubmitting}
+              disabled={isSubmitting || isUploading}
               onClick={() => router.push("/dashboard/tutor/my-tuitions")}
               className="h-11 rounded-xl border-white/15 bg-transparent px-5 text-sm font-semibold text-neutral-300 hover:bg-white/5 hover:text-white"
             >
@@ -792,15 +829,19 @@ export function PostTuitionForm() {
             </Button>
             <Button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || isUploading}
               className="h-11 rounded-xl border-transparent bg-lime-400 px-6 text-sm font-bold text-neutral-950 shadow-lg shadow-lime-400/20 hover:bg-lime-300 hover:shadow-xl hover:shadow-lime-400/30"
             >
-              {isSubmitting ? (
+              {isSubmitting || isUploading ? (
                 <Loader2 className="size-4 animate-spin" aria-hidden="true" />
               ) : (
                 <CheckCircle2 className="size-4" aria-hidden="true" />
               )}
-              {isSubmitting ? "Submitting..." : "Submit"}
+              {isUploading
+                ? "Uploading image..."
+                : isSubmitting
+                  ? "Submitting..."
+                  : "Submit"}
             </Button>
           </div>
         </div>

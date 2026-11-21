@@ -22,6 +22,7 @@ import {
   XCircle,
 } from "lucide-react"
 
+import { TuitionBanner } from "@/components/tuitions/tuition-banner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -40,6 +41,7 @@ type Tuition = {
   monthlyFee: number
   daysPerWeek: number
   description: string
+  bannerImage?: string | null
   approvalStatus?: string
   status?: string
   createdAt: string
@@ -362,6 +364,14 @@ export default function TuitionDetailPage() {
 
               <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
                 <div className="space-y-6">
+                  {tuition.bannerImage ? (
+                    <TuitionBanner
+                      src={tuition.bannerImage}
+                      alt={`Banner for ${tuition.title || "tuition"}`}
+                      subject={tuition.subject}
+                    />
+                  ) : null}
+
                   <section className={cardClasses}>
                     <h2 className="text-lg font-bold tracking-tight text-white">
                       Tuition details

@@ -12,21 +12,21 @@ export const getSession = async (options?: { fresh?: boolean }) => {
 
 export const getToken = async () => {
   const session = await getSession()
-  if (!session ||!session.session?.token) {
+  if (!session || !session.session?.token) {
     throw new Error("No token available")
   }
+  
   return session.session.token
 }
 
-
 export const authFetch = async (api: string, init: RequestInit = {}) => {
-  const token = await getToken();
-  const headers = new Headers(init.headers);
-  headers.set("authorization", `Bearer ${token}`);
+  const token = await getToken()
+  const headers = new Headers(init.headers)
+  headers.set("authorization", `Bearer ${token}`)
 
   return fetch(api, {
     cache: "no-store",
     ...init,
     headers,
-  });
+  })
 }

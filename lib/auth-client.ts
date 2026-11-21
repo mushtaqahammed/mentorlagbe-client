@@ -14,3 +14,12 @@ export const authClient = createAuthClient({
 })
 
 export const { signIn, signUp, signOut, useSession } = authClient
+
+/**
+ * Ask every `useSession()` subscriber to refetch once through Better Auth's
+ * shared store. Direct `authClient.getSession()` calls are raw requests: they
+ * do not update the store that powers the Navbar.
+ */
+export function refreshSession() {
+  authClient.$store.notify("$sessionSignal")
+}
