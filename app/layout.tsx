@@ -2,6 +2,7 @@ import { Geist, Geist_Mono } from "next/font/google"
 
 import "./globals.css"
 import { SessionHydrator } from "@/components/auth/session-hydrator"
+import { BookmarkProvider } from "@/components/bookmarks/bookmark-provider"
 import { SiteChrome } from "@/components/site-chrome"
 import { ThemeProvider } from "@/components/theme-provider"
 import { AppToastContainer } from "@/components/ui/toast-container"
@@ -41,8 +42,10 @@ export default async function RootLayout({
           disableTransitionOnChange
         >
           <SessionHydrator session={session} />
-          <SiteChrome>{children}</SiteChrome>
-          <AppToastContainer />
+          <BookmarkProvider>
+            <SiteChrome>{children}</SiteChrome>
+            <AppToastContainer />
+          </BookmarkProvider>
         </ThemeProvider>
       </body>
     </html>

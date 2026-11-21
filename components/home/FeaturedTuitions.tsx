@@ -19,6 +19,7 @@ import {
   XCircle,
 } from "lucide-react"
 
+import { BookmarkButton } from "@/components/tuitions/bookmark-button"
 import { TuitionBanner } from "@/components/tuitions/tuition-banner"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
@@ -134,11 +135,17 @@ export function FeaturedTuitionCard({
       aria-label={`View details for ${tuition.title || "tuition"}`}
     >
       <article className="flex h-full flex-col">
-        <TuitionBanner
-          src={tuition.bannerImage}
-          alt={tuition.title || "Tuition banner"}
-          subject={tuition.subject}
-        />
+        <div className="relative">
+          <BookmarkButton
+            tuitionId={tuition.id}
+            className="absolute top-3 right-3 z-10"
+          />
+          <TuitionBanner
+            src={tuition.bannerImage}
+            alt={tuition.title || "Tuition banner"}
+            subject={tuition.subject}
+          />
+        </div>
 
         <div className="flex items-start justify-between gap-3">
           <span className="inline-flex min-w-0 items-center gap-1.5 rounded-full bg-lime-400/10 px-2.5 py-1 text-[11px] font-semibold tracking-wide text-lime-300 ring-1 ring-lime-400/25">

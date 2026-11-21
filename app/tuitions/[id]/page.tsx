@@ -22,6 +22,7 @@ import {
   XCircle,
 } from "lucide-react"
 
+import { BookmarkButton } from "@/components/tuitions/bookmark-button"
 import { TuitionBanner } from "@/components/tuitions/tuition-banner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -180,6 +181,12 @@ export default function TuitionDetailPage() {
     preferredSchedule: "",
     note: "",
   })
+
+  const approval = String(tuition?.approvalStatus ?? "").trim().toLowerCase()
+  const lifecycle = String(tuition?.status ?? "").trim().toLowerCase()
+  const tuitionUnavailable =
+    Boolean(tuition) &&
+    (approval !== "approved" || (lifecycle !== "" && lifecycle !== "active"))
 
   React.useEffect(() => {
     async function loadTuition() {
@@ -342,13 +349,16 @@ export default function TuitionDetailPage() {
                   <div className="absolute -top-32 -left-16 size-80 rounded-full bg-lime-400/10 blur-[120px]" />
                   <div className="absolute -right-20 -bottom-32 size-72 rounded-full bg-sky-400/10 blur-[110px]" />
                 </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-lime-300 backdrop-blur-sm">
-                    <BookOpen className="size-3.5" aria-hidden="true" />
-                    {tuition.subject || "Subject not set"}
-                  </span>
-                  <ApprovalBadge value={tuition.approvalStatus} />
-                  <StatusBadge value={tuition.status} />
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-lime-300 backdrop-blur-sm">
+                      <BookOpen className="size-3.5" aria-hidden="true" />
+                      {tuition.subject || "Subject not set"}
+                    </span>
+                    <ApprovalBadge value={tuition.approvalStatus} />
+                    <StatusBadge value={tuition.status} />
+                  </div>
+                  <BookmarkButton tuitionId={tuition.id} />
                 </div>
 
                 <h1 className="mt-5 text-3xl font-bold tracking-tight sm:text-4xl">
@@ -454,7 +464,7 @@ export default function TuitionDetailPage() {
                     <Button
                       type="button"
                       onClick={openApplyForm}
-                      disabled={submitting || applied}
+                      disabled={submitting || applied || tuitionUnavailable}
                       className={cn(
                         "mt-6 h-12 w-full gap-2 rounded-full bg-lime-400 px-6 text-sm font-semibold text-neutral-950 shadow-lg shadow-lime-400/20 transition-all hover:-translate-y-0.5 hover:bg-lime-300",
                         applied &&
@@ -471,17 +481,21 @@ export default function TuitionDetailPage() {
                       ) : (
                         <BookOpen className="size-4" aria-hidden="true" />
                       )}
-                      {applied
-                        ? "Application Submitted"
-                        : submitting
-                          ? "Submitting..."
-                          : "I Want This Tuition"}
+                      {tuitionUnavailable
+                        ? "Unavailable"
+                        : applied
+                          ? "Application Submitted"
+                          : submitting
+                            ? "Submitting..."
+                            : "I Want This Tuition"}
                     </Button>
 
                     <p className="mt-3 text-center text-xs leading-relaxed text-neutral-400">
-                      {applied
-                        ? "Your application is pending review."
-                        : "Sign in as a student to send your application to the tutor."}
+                      {tuitionUnavailable
+                        ? "This tuition is no longer available for applications."
+                        : applied
+                          ? "Your application is pending review."
+                          : "Sign in as a student to send your application to the tutor."}
                     </p>
                   </div>
                 </aside>

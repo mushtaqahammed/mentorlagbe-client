@@ -1,313 +1,308 @@
-# MentorLagbe — Client
+# MentorLagbe Client (Frontend)
 
-**MentorLagbe** is a tuition/mentorship platform for Bangladesh that connects students with verified tutors. This repository is the **frontend (client)** app. A sibling folder `mentorlagbe-server` exists next to this repo but is currently **empty** (no backend code yet).
+This repository is the **Next.js frontend** of MentorLagbe, a tuition/mentorship platform connecting students with tutors in Bangladesh. The backend lives in a separate sibling repository at `../mentorlagbe-server` and has its own README. This document covers **frontend concerns only**.
 
-This document is the single source of truth for the project's state. Feed it to a new conversation to resume work without re-explaining anything.
+Roles: `Student` (default), `Tutor`, and `Admin`. Pro plans (paid through Stripe) unlock extra capabilities for Students and Tutors.
 
 ---
 
-## 1. Project Overview
+## 1. Project Overview and Purpose
 
-- **Product name:** MentorLagbe
-- **Tagline:** "Find the right mentor, right when you need one."
-- **User roles:** `Student` (default), `Tutor`, `Admin` — selected at sign-up via a select field
-- **Core concept:** Students browse tuition posts, tutors offer their services, sessions are tracked. Paid "Pro" plans are planned.
+MentorLagbe lets students discover tuition posts, apply to tutors, and track applications. Tutors create and manage tuition listings, review applicants, and can upgrade to Pro. Admins review new tuition posts, manage users, and inspect platform statistics and transactions. The frontend is a server-rendered Next.js App Router application with client-side interactive pages; all persistent application data comes from the Express backend through Next.js route handlers and server actions. Authentication (sessions and the `user` document) is handled by Better Auth with a MongoDB adapter.
 
-## 2. Current Status Snapshot
+## 2. Frontend Technology Stack
 
-| Area                                                             | Status                                                                    |
-| ---------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| Project scaffolding (Next.js 16 + Tailwind 4 + shadcn/base-nova) | ✅ Done                                                                   |
-| Root layout (fonts, theme provider, navbar, footer)              | ✅ Done                                                                   |
-| Navbar (desktop + mobile, session-aware)                         | ✅ Done                                                                   |
-| Footer                                                           | ✅ Done                                                                   |
-| Auth pages — Sign Up (email/password + role select)              | ✅ Done                                                                   |
-| Auth pages — Sign In (email/password + Google button)            | ✅ Done                                                                   |
-| Auth API route (`/api/auth/[...all]`)                            | ✅ Done                                                                   |
-| Auth backend config (Better Auth + MongoDB, `role` field)        | ✅ Done                                                                   |
-| Home page (simple hero with CTA links)                           | ✅ Done (basic)                                                           |
-| Browse Tuitions page                                             | 🟨 Placeholder — title only                                               |
-| Pricing page                                                     | 🟨 Placeholder — title only                                               |
-| How It Works page                                                | 🟨 Placeholder — title only                                               |
-| Dashboard page                                                   | 🟨 Placeholder — title only ("Role-based dashboard content will go here") |
-| Update Profile page                                              | 🟨 Placeholder — title only ("Profile editing form will go here")         |
-| About page                                                       | 🟨 Placeholder — completely empty component                               |
-| Google OAuth (social provider)                                   | ⚠️ Code wired up, but **not functional** — see Pending Tasks              |
-| Route protection / middleware                                    | ❌ Not started                                                            |
-| Backend (`mentorlagbe-server`)                                   | ❌ Empty folder                                                           |
+| Technology | Version (package.json) | Purpose |
+| --- | --- | --- |
+| Next.js (App Router) | ^16.4.5 | Framework, routing, Server Components, Route Handlers, Server Actions |
+| React / React DOM | 19.3.1 | UI library |
+| TypeScript | ^5 | Typing across app, components, lib, scripts |
+| Tailwind CSS | ^4 (`@tailwindcss/postcss`) | CSS-first styling; no `tailwind.config.*` file |
+| shadcn (`base-nova` style) + `@base-ui/react` | ^4.23.0 / ^1.9.0 | UI primitives in `components/ui/*` (Base UI, not Radix) |
+| `lucide-react` | ^1.75.0 | Icon components used throughout the UI |
+| `next-themes` | ^0.4.6 | Class-based light/dark theme |
+| Better Auth + MongoDB adapter | ^1.7.25 | Authentication, session hooks, user fields |
+| MongoDB Node driver | ^7.9.0 | Used by `lib/auth.ts` (adapter) and `scripts/seed-tuitions.ts` |
+| `react-toastify` | ^11.2.0 | Global notifications |
+| Stripe (`stripe`, `@stripe/stripe-js`) | ^23.2.0 / ^10.3.0 | Server-side Checkout/verification (`stripe` is used; `@stripe/stripe-js` is installed but not imported) |
+| `class-variance-authority`, `cn` | ^0.7.1 / ^0.5.2 | Button variants and class merging |
+| Prettier, ESLint, TypeScript | dev deps | Formatting, linting, type checking |
+| `tsx` | dev dep | Runs the tuition seed script |
 
-Legend: ✅ implemented · 🟨 skeleton exists · ❌ not started · ⚠️ partially wired
+Fonts: Geist and Geist Mono via `next/font/google`, exposed as `--font-sans` / `--font-mono`. Brand accent: `lime-400` on dark neutral surfaces.
 
-## 3. Technologies Used
+> Next.js 16 differs from older versions. `AGENTS.md`/`CLAUDE.md` instruct developers to consult `node_modules/next/dist/docs/` before writing Next.js-specific code.
 
-| Technology                                                          | Version                                | Purpose                                                                                                                            |
-| ------------------------------------------------------------------- | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| Next.js                                                             | 16.4.5 (App Router)                    | Framework. **Note:** APIs differ from older Next.js — consult `node_modules/next/dist/docs/` before writing code (see `AGENTS.md`) |
-| React                                                               | 19.3.1                                 | UI library                                                                                                                         |
-| TypeScript                                                          | ^5                                     | Typing throughout                                                                                                                  |
-| Tailwind CSS                                                        | ^4 (via `@tailwindcss/postcss`)        | Styling — CSS-first config, **no `tailwind.config` file**                                                                          |
-| shadcn (base-nova style)                                            | ^4.23.0 + `@base-ui/react` ^1.9.0      | Component primitives (`components/ui/*` uses Base UI, not Radix)                                                                   |
-| Better Auth                                                         | ^1.7.25 + `@better-auth/mongo-adapter` | Authentication                                                                                                                     |
-| MongoDB                                                             | ^7.9.0 (Node driver)                   | Auth database (`mentor_lagbe` DB)                                                                                                  |
-| next-themes                                                         | ^0.4.6                                 | Light/dark theme (class attribute, system default)                                                                                 |
-| `class-variance-authority`, `cn`                                    | —                                      | Variant/class utilities                                                                                                            |
-| Prettier + prettier-plugin-tailwindcss, ESLint (eslint-config-next) | —                                      | Formatting & linting                                                                                                               |
+## 3. Installation and Setup
 
-Fonts: **Geist** and **Geist Mono** (Google fonts) exposed as `--font-sans` / `--font-mono`.
+Prerequisites: Node.js (the seed script uses `process.loadEnvFile`, available in newer Node releases), npm, access to the MongoDB database used by Better Auth, and a running backend for data features.
 
-## 4. Folder Structure
+```bash
+cd mentorlagbe-client
+npm install
+cp .env.example .env    # if provided; otherwise create .env with the variables in section 14
+npm run dev             # http://localhost:3000
+```
+
+Useful scripts (`package.json`):
+
+| Command | Description |
+| --- | --- |
+| `npm run dev` | Start Next.js dev server |
+| `npm run build` / `npm run start` | Production build / serve the build |
+| `npm run lint` | ESLint |
+| `npm run typecheck` | `tsc --noEmit` |
+| `npm run format` | Prettier on `*.ts` / `*.tsx` |
+| `npm run seed` | Insert 12 approved demo tuition posts (idempotent; requires an existing Tutor account) |
+| `npm run seed:dry` | Preview seed posts without writing |
+
+The seed script (`scripts/seed-tuitions.ts`) uses `BETTER_AUTH_DB_URI`, targets the `mentor_lagbe` database and `tuition` collection, derives deterministic ids from slugs, and uses `$setOnInsert` so re-runs never overwrite records.
+
+## 4. Client Folder Structure
 
 ```
 mentorlagbe-client/
-├── app/
-│   ├── (auth)/
-│   │   ├── sign-in/page.tsx        # Sign-in page (fully implemented)
-│   │   └── sign-up/page.tsx        # Sign-up page (fully implemented)
-│   ├── api/auth/[...all]/route.ts  # Better Auth catch-all handler (GET + POST)
-│   ├── about/page.tsx              # Placeholder (empty)
-│   ├── dashboard/page.tsx          # Placeholder
-│   ├── how-it-works/page.tsx       # Placeholder
-│   ├── pricing/page.tsx            # Placeholder
-│   ├── tuitions/page.tsx           # Placeholder
-│   ├── update-profile/page.tsx     # Placeholder
-│   ├── globals.css                 # Only `@import "tailwindcss";` — no theme tokens yet
-│   ├── layout.tsx                  # Root layout: fonts + ThemeProvider + Navbar + Footer
-│   ├── page.tsx                    # Home page
-│   └── favicon.ico
-├── components/
-│   ├── auth/auth-form.tsx          # AuthShell, AuthInput, AuthSelect, SubmitButton, GoogleButton, Divider
-│   ├── ui/button.tsx               # shadcn button (Base UI + CVA variants)
-│   ├── footer.tsx                  # Footer
-│   ├── logo.tsx                    # LogoMark (lime link icon) + Logo (link wrapper)
-│   ├── navbar.tsx                  # Navbar
-│   └── theme-provider.tsx          # next-themes wrapper + "d" hotkey toggle
-├── hooks/                          # Empty (.gitkeep)
-├── lib/
-│   ├── auth.ts                     # Better Auth server config (MongoDB adapter)
-│   ├── auth-client.ts              # Shared Better Auth client (React hooks)
-│   └── utils.ts                    # cn() helper
-├── components.json                 # shadcn config (style: base-nova)
-├── .env                            # BETTER_AUTH_SECRET, BETTER_AUTH_URL, BETTER_AUTH_DB_URI
-└── package.json
+  app/
+    (auth)/sign-in/{page,loading}.tsx        # sign-in page
+    (auth)/sign-up/{page,loading}.tsx        # sign-up page
+    api/
+      auth/[...all]/route.ts                 # Better Auth catch-all (GET, POST)
+      tuitions/route.ts                      # public list proxy
+      tuitions/[id]/route.ts                 # public detail proxy
+      featured-tuitions/route.ts             # featured list proxy
+      platform/stats/route.ts                # public stats proxy
+      testimonials/route.ts                  # public list + student/tutor submission
+      admin/stats/route.ts                   # admin-only stats proxy
+      admin/users/route.ts                   # admin-only user list proxy
+      admin/users/[id]/role/route.ts         # admin-only role change proxy
+      admin/tuitions/route.ts                # admin-only tuition list proxy
+      admin/tuitions/[id]/{approve,reject}/route.ts + handle-approval.ts
+      admin/testimonials/route.ts, admin/testimonials/[id]/route.ts
+      admin/transactions/route.ts            # admin-only transaction list proxy
+      profile/route.ts                       # GET/PATCH own profile (Better Auth)
+      checkout-sessions/route.ts             # POST: create Stripe Checkout Session
+      subscription/confirm/route.ts          # POST: verify Stripe session and grant Pro
+      subscription/status/route.ts           # GET: current subscription state
+      uploads/imgbb/route.ts                 # POST: authenticated banner upload
+      uploads/profile-image/route.ts         # POST: unauthenticated sign-up image upload
+      webhooks/stripe/route.ts               # POST: Stripe webhook
+    dashboard/                               # app-shell layout + role pages (see section 5)
+    components/dashboardsidebar.tsx          # role-aware dashboard sidebar
+    tuitions/page.tsx, tuitions/[id]/page.tsx# public browse + detail
+    all-tuitions/page.tsx                    # redirects to /tuitions
+    pricing/page.tsx, payment/...            # Pro plans and checkout UI
+    how-it-works/page.tsx, page.tsx          # marketing pages
+    error.tsx, not-found.tsx, loading.tsx    # shared error/404/loading UI
+    layout.tsx, globals.css                  # root layout and global CSS
+  components/
+    admin/, auth/, dashboard/, home/, loading/, payment/, profile/, student/, tutor/, tuitions/, ui/
+    navbar.tsx, footer.tsx, logo.tsx, site-chrome.tsx, theme-provider.tsx
+  hooks/use-mobile.ts                        # responsive helper for the sidebar
+  lib/
+    auth.ts, auth-client.ts                  # Better Auth server config + shared client
+    core/server.ts, backend-api.ts, session.ts
+    actions/{applications,tuition}.ts        # "use server" actions
+    admin/*, tuitions/*, testimonials/*, platform/stats.ts
+    imgbb.ts, notify.ts, plans.ts, profile.ts, stripe.ts, subscription.ts, utils.ts
+    dashboard-menu.ts                        # role-based menu definitions
+  scripts/seed-tuitions.ts
+  public/hero-mentorship.jpg
+  components.json                            # shadcn config (style: base-nova)
 ```
 
-## 5. Completed Features (details)
+## 5. Pages, Routes, and Layouts
 
-### 5.1 Root Layout (`app/layout.tsx`)
+`app/layout.tsx` loads Geist fonts, wraps the app in `ThemeProvider` (class theme, `defaultTheme="light"`, system detection, `d` hotkey), seeds the client session with `SessionHydrator`, renders `SiteChrome` (Navbar/Footer) and mounts the single global `AppToastContainer`.
 
-- Geist / Geist Mono fonts loaded via `next/font/google`, `suppressHydrationWarning` on `<html>` for theme.
-- Wraps the whole app in `ThemeProvider` (class-based, `defaultTheme="light"` passed in layout, system detection enabled).
-- Renders `<Navbar />` above `{children}` and `<Footer />` below on **every** page (auth pages included — the auth shell is sized with `min-h-[calc(100svh-4rem)]` to account for the 4rem sticky navbar).
+`components/site-chrome.tsx` hides the public Navbar/Footer on `/dashboard` and its children so the dashboard can render its own sidebar + top bar.
 
-### 5.2 Navbar (`components/navbar.tsx`)
+| Route | File | Description |
+| --- | --- | --- |
+| `/` | `app/page.tsx` | Marketing home: Banner, TopSubjects, HowMentorLagbeWorks, PlatformStats, FeaturedTuitions, Testimonials |
+| `/tuitions` | `app/tuitions/page.tsx` | Public listing; client search, mode filter, `?subject=` prefill from home subject cards |
+| `/tuitions/[id]` | `app/tuitions/[id]/page.tsx` | Detail page with student application form |
+| `/all-tuitions` | `app/all-tuitions/page.tsx` | Redirects to `/tuitions` |
+| `/pricing` | `app/pricing/page.tsx` | Two Pro plans from `lib/plans.ts`; CTA only for the signed-in role's own plan |
+| `/payment` | `app/payment/page.tsx` | Read-only checkout review; sign-in/role gates |
+| `/payment/success` | `app/payment/success/page.tsx` | Reads `?session_id=`, shows confirmation and triggers verification |
+| `/how-it-works` | `app/how-it-works/page.tsx` | Reuses the home workflow section |
+| `/sign-in`, `/sign-up` | `app/(auth)/...` | Auth pages (route group keeps flat URLs) |
+| `/dashboard` | `app/dashboard/layout.tsx` | App shell: `DashboardGuard`, sidebar, navbar; `/dashboard` itself renders `null` and the guard redirects to the role home |
+| `/dashboard/student`, `/dashboard/student/my-applications` | Student pages | Overview stats and application list |
+| `/dashboard/bookmarks` | `app/dashboard/bookmarks/page.tsx` | Saved tuitions: search, sort, plan usage, remove; student-only route |
+| `/dashboard/tutor`, `/dashboard/tutor/post-tuition`, `/my-tuitions`, `/applicants` | Tutor pages | Overview, create, manage, review |
+| `/dashboard/admin`, `/users`, `/tuitions`, `/transactions` | Admin pages | Stats, user management, approvals, transaction list |
+| `/dashboard/profile` | `app/dashboard/profile/page.tsx` | Profile edit form + subscription summary |
 
-- **Sticky, dark header** (`bg-neutral-900`), height 16 (`h-16`), max-w-7xl container.
-- Logo (`components/logo.tsx`) links home; lime (`#a3e635`-family) is the brand accent color.
-- **Nav links:** Home `/`, Browse Tuitions `/tuitions`, Pricing `/pricing`, How It Works `/how-it-works`, About `/about`. Active link highlighted via `usePathname()`.
-- **Breakpoint behavior:** desktop nav links visible at `lg+`; hamburger menu button below `lg` toggles a dropdown panel with the same links. Desktop user section visible at `md+` (below `md`, everything lives in the mobile menu).
-- **Session-aware right side** (uses `authClient.useSession()`):
-  - While loading (`isPending`): pulsing avatar skeleton.
-  - **Signed in:** avatar (user image or 2-letter initials fallback), truncated name, colored **role badge** (Student = sky, Tutor = lime, Admin = rose, defaults to Student styling), extra links **Dashboard** `/dashboard` and **Update Profile** `/update-profile`, and a **Sign Out** button.
-  - Sign-out: calls `signOut()`, redirects to `/`, refreshes the router, disables the button with "Signing Out..." while pending.
-  - **Signed out:** "Sign In" text link + lime pill **Sign Up** button → `/sign-up`.
-- Mobile menu mirrors the same signed-in/signed-out states and closes on link click.
+Every page route has a sibling `loading.tsx` using skeletons from `components/loading/`. `app/error.tsx` and `app/not-found.tsx` provide branded fallback pages.
 
-### 5.3 Footer (`components/footer.tsx`)
+## 6. Components and Their Responsibilities
 
-- Server component; dark (`bg-neutral-950`) with a soft lime glow decoration.
-- **CTA banner:** lime rounded card — "Ready to find the right mentor?" + "Get Started" → `/sign-up`.
-- **4-column grid:** Brand block (logo, tagline, social links: X, Facebook, LinkedIn — inline SVGs, external `target="_blank"`), Quick Links (same 5 nav routes), Contact (email `support@mentorlagbe.com`, phone `+880 1700-000000`, location "Dhaka, Bangladesh"), Legal (Terms of Service / Privacy Policy — **both currently just link to `/`**, no real pages).
-- Dynamic copyright year; tagline "Mentors · Learners · Growth"; giant gradient "MentorLagbe" wordmark cut off at the bottom (signature design element).
+**Global / marketing**
 
-### 5.4 Home Page (`app/page.tsx`)
+- `components/navbar.tsx`: sticky dark header; nav links Home, Browse Tuitions, Pricing, How It Works; mobile hamburger menu; session-aware avatar, role badge, Dashboard/Update Profile links, sign-out (`signOut()`), and sign-in/sign-up CTAs.
+- `components/footer.tsx`: CTA banner, quick links, contact info, social icons, legal links (currently both point to `/`).
+- `components/site-chrome.tsx`, `theme-provider.tsx`, `logo.tsx`, `ui/toast-container.tsx`: chrome, theme, branding, notifications.
 
-- Simple centered hero: LogoMark + "MentorLagbe" heading, one-line description, two CTAs → "Browse Tuitions" (lime pill) and "How It Works" (outline). Server component. No other homepage sections exist yet.
+**Home** (`components/home/`): `banner.tsx` (hero + local image), `TopSubjects.tsx` (subject links with `?subject=`), `HowMentorLagbeWorks.tsx` (4-step student and tutor flows), `PlatformStats.tsx` (client-fetched counters with count-up animation), `FeaturedTuitions.tsx` (client-fetched cards), `Testimonials.tsx` (client-fetched approved feedback).
 
-### 5.5 Auth Pages
+**Auth** (`components/auth/auth-form.tsx`): `AuthShell` (two-panel layout), `AuthInput` (icon + show/hide password), `AuthSelect`, `SubmitButton`, `GoogleButton`, `Divider`. `session-hydrator.tsx` seeds the shared client session store.
 
-Shared building blocks in `components/auth/auth-form.tsx`:
+**Dashboard shell** (`components/dashboard/`): `dashboard-guard.tsx` (client-side auth/role redirect), `dashboard-navbar.tsx`, `profile-dropdown.tsx` (sign out), `role-badge.tsx`, `user-avatar.tsx`, `stat-card.tsx`, `dashboard-page.tsx`, `profile/profile-manager.tsx` (name/phone/image edit). `app/components/dashboardsidebar.tsx` builds the role-specific menu from `lib/dashboard-menu.ts` using `useSession()`; `components/ui/sidebar.tsx` provides the collapsible sidebar primitives.
 
-- **`AuthShell`** — two-panel split layout: desktop-only left brand panel (logo, headline with lime highlight, 3 checkmark feature bullets, copyright; lime blur glow decorations) and right form panel. Compact brand row on mobile.
-- **`AuthInput`** — label + input with optional leading icon (`mail` / `lock` / `user`); password inputs get an eye toggle to show/hide.
-- **`AuthSelect`**, **`SubmitButton`** (lime pill), **`GoogleButton`** (real Google logo SVG), **`Divider`** ("or").
+**Student**: `student-dashboard.tsx` (stats cards from `getStudentStats`), `my-applications.tsx` (list, search, status filter, sort, cancel pending applications).
 
-**Sign Up (`app/(auth)/sign-up/page.tsx`)** — client component:
+**Tutor**: `tutor-dashboard.tsx` (stats from `getTutorStats`), `post-tuition-form.tsx` (all tuition fields, banner upload, subscription check, free 2-post limit), `my-tuitions.tsx` (filter, edit, Active/Closed toggle, delete), `manage-applicants.tsx` (filter and accept/reject).
 
-- Fields: Full Name, Email, role select ("I am a": Student/Tutor/Admin, default Student), Password (min 8, show/hide toggle).
-- Client-side validation before submit: required name/email, email regex, password ≥ 8 chars, valid role.
-- Submits via `authClient.signUp.email({ name, email, password, role, callbackURL: "/" })`. On success shows "Account created successfully! Redirecting..." and routes to `/` after 1.5s (with `router.refresh()`). Errors from Better Auth are shown in a red alert line; success in a lime status line. Button shows "Creating account..." while pending.
-- **Note:** logs form data (password redacted) with `console.log` — leftover debug logging.
+**Admin**: `admin-dashboard.tsx` + `admin-stats-card.tsx`, `admin-users-manager.tsx` (search/role filter, pagination, role changes), `admin-tuition-approvals.tsx` (search/subject/status filters, pagination, approve/reject), `admin-transactions-manager.tsx` (search/role/plan filters, pagination, revenue summary).
 
-**Sign In (`app/(auth)/sign-in/page.tsx`)** — client component:
+**Shared UI**: `components/ui/{button,input,separator,sheet,sidebar,skeleton,tooltip,toast-container}.tsx`, `components/profile/{profile-image-field,avatar-image}.tsx`, `components/tuitions/tuition-banner.tsx`, `components/loading/*`, `components/payment/*`.
 
-- Fields: Email, Password (show/hide toggle). Required-field check only.
-- Submits via `authClient.signIn.email({ email, password, callbackURL: "/" })`; on success redirects to `/` and refreshes.
-- "Continue with Google" button calls `authClient.signIn.social({ provider: "google", callbackURL: "/" })`.
-- Cross-links between the two auth pages in the footer slot.
+## 7. Authentication and Better Auth (Frontend Perspective)
 
-## 6. Authentication System
+- `lib/auth.ts` configures Better Auth with `mongodbAdapter` on database `mentor_lagbe`, email/password enabled, cookie cache (5 minutes), and additional user fields: `role`, `phone`, plus server-owned subscription fields (`plan`, `subscriptionStatus`, `proPlanId`, `stripeSubscriptionId`, `stripeCustomerId`, `proActivatedAt`, `subscriptionStartDate`, `subscriptionEndDate`). A `databaseHooks.user.create.before` hook reduces public sign-up roles to `Student` or `Tutor`; an update hook blocks client writes to role/subscription fields. Google social provider is only registered when both Google env vars are present.
+- `app/api/auth/[...all]/route.ts` exposes `toNextJsHandler(auth)` as GET/POST (sign-in, sign-up, sign-out, session, `updateUser`).
+- `lib/auth-client.ts` exports one shared `authClient` created with `inferAdditionalFields<typeof auth>()`, plus `signIn`, `signUp`, `signOut`, `useSession` and `refreshSession()`. All components must use this single instance so session updates propagate.
+- `components/auth/session-hydrator.tsx` hydrates the store from the server-resolved session in the root layout; `lib/session.ts` and `lib/core/server.ts` provide `getSession()` / `getToken()` / `authFetch()` for server code (`authFetch` attaches `Authorization: Bearer <session token>` and `cache: "no-store"`).
+- Sign-up (`app/(auth)/sign-up/page.tsx`) sends name/email/password/role/optional image and redirects home after ~1.5 s. Sign-in (`app/(auth)/sign-in/page.tsx`) uses email/password and also renders a Google button (`signIn.social`).
+- The public Navbar reads `useSession()`; the dashboard has a **client-side** guard (`DashboardGuard`) that redirects unauthenticated users to `/sign-in` and users on another role's dashboard to their own overview. There is **no** `middleware.ts` and no server-side guard on dashboard pages.
 
-**Stack:** Better Auth (server + React client) with the official **MongoDB adapter**.
+## 8. Student, Tutor, and Admin Dashboard Features
 
-### Server (`lib/auth.ts`)
+- **Student**: live overview (total applied, accepted, pending, current plan), browse/apply on `/tuitions/[id]` (phone, preferred schedule, optional note), list/search/filter/sort applications, cancel only pending applications, save/un-save tuitions from cards and the detail page, manage bookmarks at `/dashboard/bookmarks` (search, sort, usage, remove), view profile and subscription.
+- **Tutor**: overview (total posts, active+approved posts, applicants, plan), create tuition with banner upload and free-plan cap of 2 posts (verified through `/api/subscription/status` on every submit), edit/close/delete own posts, review applicants (accept/reject), profile/subscription.
+- **Admin**: platform stats (users, tutors, pending/approved posts, Stripe revenue), paginated user search with role promotions (cannot change own role), paginated tuition approvals with subject/status filters, paginated transactions with role/plan filters, admin testimonial API routes (no dedicated UI yet), profile/subscription.
 
-- Connects via `MongoClient(process.env.BETTER_AUTH_DB_URI)`, database **`mentor_lagbe`**.
-- **Email & password** enabled.
-- **Custom user field `role`:** `type: "string"`, `input: true`, `defaultValue: "Student"`. Type is a plain string (Better Auth field types are primitives); the allowed values (Student/Tutor/Admin) are only enforced by the sign-up form's select options — the server does not validate the enum.
-- **Google social provider** configured from `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` env vars (cast with `as string`, no presence validation).
-- Mounted at `app/api/auth/[...all]/route.ts` via `toNextJsHandler(auth)`.
+## 9. API Integration (Frontend Endpoints)
 
-### Client (`lib/auth-client.ts`)
+All route handlers set `runtime = "nodejs"` where MongoDB/Stripe are involved; data reads use `cache: "no-store"`.
 
-- One shared `authClient = createAuthClient({ plugins: [inferAdditionalFields<typeof auth>()] })`; exports `signIn, signUp, signOut, useSession`.
-- `inferAdditionalFields` surfaces the server's `role` field in client types; the `auth` import is **type-only** so no server code reaches the client bundle.
-- Consumers must import from this single instance (see Fix F1).
+| Frontend endpoint | Methods | Purpose / upstream call |
+| --- | --- | --- |
+| `/api/auth/[...all]` | GET, POST | Better Auth session/auth endpoints (client `signIn`, `signUp`, `signOut`, `useSession`, `updateUser`) |
+| `/api/tuitions` | GET | Proxies backend public tuition list; filters to approved+active in the proxy |
+| `/api/tuitions/[id]` | GET | Proxies one public tuition; 404 for hidden/unavailable posts |
+| `/api/featured-tuitions` | GET | Proxies backend featured posts (max 6) |
+| `/api/platform/stats` | GET | Proxies public counters |
+| `/api/testimonials` | GET, POST | List approved feedback; submit feedback (Student/Tutor, session required) |
+| `/api/profile` | GET, PATCH | Read/update own profile via Better Auth; PATCH whitelists `name`, `phone`, `image` |
+| `/api/admin/stats`, `/api/admin/users`, `/api/admin/tuitions`, `/api/admin/transactions`, `/api/admin/testimonials` | GET | Admin-only proxies; server-side session/role check (`requireAdmin()` in `lib/admin/api-auth.ts`, direct `getSession()` check in `/api/admin/stats`) before forwarding |
+| `/api/admin/users/[id]/role` | PATCH | Admin role change proxy |
+| `/api/admin/tuitions/[id]/approve`, `/.../reject` | PATCH | Admin approval decision fixed by the route path, not the body |
+| `/api/admin/testimonials/[id]` | PATCH | Admin testimonial moderation |
+| `/api/checkout-sessions` | POST | Creates Stripe subscription Checkout Session, responds 303 redirect to Stripe |
+| `/api/subscription/confirm` | POST | Verifies `sessionId` with Stripe and grants Pro; maps error codes to HTTP statuses |
+| `/api/subscription/status` | GET | Reads current subscription state for the signed-in user |
+| `/api/webhooks/stripe` | POST | Verifies signature and syncs subscription/checkout events |
+| `/api/uploads/imgbb`, `/api/uploads/profile-image` | POST | Validates and uploads images to ImgBB |
 
-### What works end-to-end
+Bookmark state is shared through `components/bookmarks/bookmark-provider.tsx` (mounted in the root layout): it loads bookmarks once for authenticated students, exposes optimistic add/remove with rollback and per-tuition pending guards, and is consumed by `components/tuitions/bookmark-button.tsx` and `components/student/bookmarks.tsx`. `lib/actions/bookmarks.ts` wraps the Express bookmark endpoints with `authFetch`.
 
-Email/password sign-up (with role persisted), sign-in, session read in the navbar (`authClient.useSession()`), and sign-out — all against MongoDB. Sessions appear/disappear in the navbar immediately.
+Server-side data helpers call the Express backend directly with `BACKEND_API_URL` (default `http://localhost:5000`): `lib/actions/tuition.ts` (create/count/list/update/status/delete tuitions, stats, apply), `lib/actions/applications.ts` (student/tutor stats, applications, cancel, review), `lib/admin/*` (stats/users/tuitions/transactions), `lib/testimonials/store.ts`, `lib/platform/stats.ts`, `lib/tuitions/featured.ts`, `lib/subscription.ts` (internal payment/subscription endpoints), and `lib/backend-api.ts` (shared request helper with `x-internal-secret` and user/admin headers).
 
-### What is wired but not functional
+## 10. Frontend State Management and Data Fetching
 
-Google OAuth UI exists on both auth pages and `socialProviders.google` is configured server-side, but the Google client ID/secret are **absent from `.env`** (currently only `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `BETTER_AUTH_DB_URI` are set), so the flow will fail until credentials are added.
+- No global store library. React `useState`/`useEffect` drive loading/error/data states in client components; `refreshKey`/`retryKey` patterns re-fetch after mutations.
+- Server Components read the session with `getRequestSession()`; `SessionHydrator` seeds Better Auth's client store so `useSession()` works immediately.
+- Shared client auth store: one `authClient`; `refreshSession()` notifies subscribers after subscription activation.
+- Server Actions (`"use server"` in `lib/actions/*`) keep the backend URL and bearer-token logic out of the browser bundle; `authFetch` supplies the session token.
+- Public data is fetched client-side from Next.js proxy routes with `cache: "no-store"`; admin/tutor/student components use `fetch("/api/...")` or server actions and display `notify.error(...)`/`userMessage(...)` on failure. React Toastify (`lib/notify.ts`) is the single notification path (`success`, `error`, `warning`, `info`, `loading`, `promise`, `dismiss`).
 
-## 7. Design Decisions
+## 11. Forms, Validation, and Error Handling
 
-1. **Brand identity:** dark neutral surfaces (`neutral-900`/`neutral-950`) with **lime-400** as the single accent color; rounded-full pill CTAs; `-rotate-6` link-chain LogoMark; lime blur glows on dark panels. Consistent across navbar, footer, auth pages, and home hero.
-2. **Route group `(auth)`** for sign-in/sign-up so their URLs stay flat (`/sign-in`, `/sign-up`) without affecting the layout (they still share the root layout with navbar/footer).
-3. **Single shared auth client instance** — everything (navbar included) imports from `lib/auth-client.ts`; multiple instances would each hold their own session store and stop seeing each other's updates.
-4. **Role as a string field, not enum:** Better Auth additional fields only support primitive types; the form's select constrains values. Navbar falls back to `role ?? "Student"` and unknown roles render with Student badge styling.
-5. **Client-side validation first, server errors second** on auth forms (regex email check, password length, role whitelist) with `role="alert"` / `role="status"` for accessibility.
-6. **Navbar/Footer globally** in the root layout rather than per-page; auth pages size themselves with `min-h-[calc(100svh-4rem)]` to fit below the sticky navbar.
-7. **Inline SVG icons** (no icon library installed despite `iconLibrary: "lucide"` in components.json).
-8. **Tailwind 4 CSS-first** styling with no config file; custom theme tokens (e.g., `--color-primary`) are **not yet defined** in `globals.css` — only the Tailwind import exists there, so shadcn token classes like `text-muted-foreground` have no variable backing on placeholder pages.
-9. **Theme hotkey:** pressing "d" (outside inputs) toggles light/dark via a `ThemeHotkey` helper inside `ThemeProvider`.
+- Sign-up: required name/email, email regex, password >= 8, role must be Student/Tutor; Better Auth errors shown via toast; image upload must finish before submit.
+- Sign-in: required email/password; Google button calls `signIn.social`.
+- Tuition form: all fields required, fee parsed from free text (`parseAmount`), days >= 1, tutor role check, free-plan limit check (2 posts), 5 MB image limit, image must upload before the tuition is created; uses `notify.promise` for the create action.
+- Profile form: name 2-80 chars, phone `/^\+?[0-9][0-9\s-]{5,19}$/`, image URL must be http(s); PATCH `/api/profile` whitelists fields.
+- Application form: phone and preferred schedule required; note optional; backend duplicate-application error is surfaced and treated as "already applied".
+- Testimonial route: rating integer 1-5, message 10-600 characters; 409 conflict mapped to a friendly message.
+- Errors: `lib/notify.ts#userMessage` hides network/technical noise; API helpers parse `{ error }` JSON with a fallback message; `app/error.tsx` and `app/not-found.tsx` are branded recovery pages.
 
-## 8. Fixes Applied (so we don't redo them)
+## 12. Image Upload (Frontend Perspective)
 
-- **F1 — Sign-out not updating the navbar:** the navbar originally had its own auth client; because each `createAuthClient()` instance keeps its own session store, the navbar kept showing the old session after sign-out on an auth page. Fixed by making everything import the **single shared instance** from `lib/auth-client.ts`. (Documented in comments in that file.)
-- **F2 — Navbar under sticky header:** auth shell uses `min-h-[calc(100svh-4rem)]` so content doesn't overflow behind the 4rem sticky navbar.
-- **F3 — Mobile nav breakpoint tuning:** desktop nav links show at `lg+` (not `md+`) to prevent crowding, with the hamburger handling anything below `lg`.
+- `lib/imgbb.ts` (server-only helper) validates `FormData` field `image`: JPG/PNG/WebP/GIF, non-empty, <= 5 MB; posts to `https://api.imgbb.com/1/upload` with `IMGBB_API_KEY`; returns `{ url, deleteUrl }`.
+- `POST /api/uploads/imgbb`: requires a Better Auth session; used by the tuition banner form.
+- `POST /api/uploads/profile-image`: no session (sign-up has none) but rate-limited per IP (6 uploads/10 minutes, in-memory map) and uses the same validation; used by `components/profile/profile-image-field.tsx`.
+- The returned URL is saved with the tuition (`bannerImage`) or passed as `image` to `authClient.signUp.email` / PATCH `/api/profile`. The ImgBB key is never sent to the browser.
 
-## 9. Pending Tasks / Known Gaps
+## 13. Stripe Payment Integration (Frontend Perspective)
 
-1. **Google OAuth not functional:** add `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` to `.env` (they are read in `lib/auth.ts` but missing). Also `as string` casts mean missing vars fail at runtime, not at startup.
-2. **Real content for the placeholder pages:** `/tuitions` (tuition post listing), `/pricing`, `/how-it-works`, `/dashboard` (role-based content), `/update-profile` (profile edit form), `/about` (empty file).
-3. **No route protection:** `/dashboard` and `/update-profile` are public; no middleware or server-side session guard exists.
-4. **globals.css has no theme tokens** — shadcn semantic classes (`bg-primary`, `text-muted-foreground`, `border-ring`, etc.) used by `components/ui/button.tsx` and placeholder pages currently have no CSS variables behind them; the theme block still needs to be generated/added.
-5. **Backend absent:** `mentorlagbe-server` is an empty folder; all data comes from the auth DB only. Tuition CRUD, profiles, payments need a server (or Next.js server actions/route handlers).
-6. **Role not validated server-side:** any `role` string can be sent to the sign-up endpoint; the enum is only enforced in the browser form.
-7. **No sign-in state redirect:** already-authenticated users can still visit `/sign-in` / `/sign-up`.
-8. **Debug `console.log`s remain** in sign-up (form data) and sign-in (success) handlers.
-9. **Footer legal links** (Terms of Service / Privacy Policy) point to `/` — no dedicated pages.
-10. **Hooks directory empty**; `iconLibrary: "lucide"` configured but `lucide-react` not installed (icons are inline SVGs).
-11. **ThemeProvider defaults differ slightly:** layout passes `defaultTheme="light"`, while the wrapper component's own default is `"system"` — reconcile at some point.
+- Plan catalog: `lib/plans.ts` - `pro-tutor` ($15/month) and `pro-student` ($10/month); plan is always derived from the authenticated role, never from query params or request bodies.
+- `/pricing` shows plans; `/payment` reviews plan/user and posts to `/api/checkout-sessions` via a normal HTML form (303 redirect to Stripe Checkout). Checkout uses `mode: "subscription"`, monthly recurring `price_data`, `client_reference_id` and metadata (`userId`, `userRole`, `planId`), success URL `/payment/success?session_id={CHECKOUT_SESSION_ID}`, cancel URL `/payment`.
+- `/payment/success` first reads stored subscription state; `components/payment/payment-confirmation.tsx` posts `{sessionId}` to `/api/subscription/confirm`. `lib/subscription.ts#verifyAndGrantProFromCheckoutSession` retrieves the Checkout Session and Subscription directly with the Stripe SDK, validates status, price, currency, interval, role/plan metadata, records the payment through the backend, then requests the Pro grant. It is also used by the webhook handler.
+- `app/api/webhooks/stripe/route.ts` verifies `stripe-signature` using `STRIPE_WEBHOOK_SECRET` and handles `checkout.session.completed`, `checkout.session.async_payment_succeeded`, and `customer.subscription.{created,updated,deleted}` via `syncStripeSubscription`.
+- Pro effects in the UI: unlimited tuition posts for Tutors (free cap 2), priority placement/applications and "save" benefits advertised on `/pricing` (not all are implemented - see section 18), subscription badge on `/dashboard/profile`.
+- `lib/stripe.ts` throws at startup if `STRIPE_SECRET_KEY` is missing and documents restricted-key permission requirements. `isStripePermissionError` maps permission failures to a 502 with a friendly message.
 
-## 10. Getting Started
+## 14. Environment Variables (names and descriptions only)
+
+Present in the working `.env` (values intentionally omitted):
+
+| Variable | Description |
+| --- | --- |
+| `BETTER_AUTH_SECRET` | Secret used by Better Auth to sign/verify session cookies and tokens |
+| `BETTER_AUTH_URL` | Base URL Better Auth uses for callbacks and trusted origins |
+| `BETTER_AUTH_DB_URI` | MongoDB connection string used by the Better Auth adapter and seed script |
+| `INTERNAL_API_SECRET` | Shared secret sent as `x-internal-secret` when calling Express backend endpoints |
+| `BACKEND_API_URL` | Base URL of the Express backend (code defaults to `http://localhost:5000`) |
+| `IMGBB_API_KEY` | Server-side key for ImgBB image uploads, used only in route handlers |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Stripe publishable key; declared in `.env` but not read by any current source file |
+| `STRIPE_SECRET_KEY` | Stripe secret/restricted key used by the server-side Stripe SDK; can be `rk_...` (see `lib/stripe.ts`) |
+
+Read in code but **not** present in the working `.env` (needed to enable those features):
+
+| Variable | Description |
+| --- | --- |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google OAuth credentials; Google sign-in is skipped entirely when absent |
+| `STRIPE_WEBHOOK_SECRET` | Signing secret used to verify Stripe webhook events; webhook returns 500 when absent |
+| `NEXT_PUBLIC_SITE_URL` / `APP_URL` | Optional fixed origin for Stripe success/cancel URLs; falls back to request headers |
+
+Never commit real credentials. The repository `.gitignore` excludes `.env*`.
+
+## 15. Required npm Packages and Their Purposes
+
+See `package.json` for exact versions. Runtime: `next`, `react`, `react-dom`, `better-auth`, `@better-auth/mongo-adapter`, `mongodb`, `stripe`, `@stripe/stripe-js`, `react-toastify`, `next-themes`, `lucide-react`, `@base-ui/react`, `shadcn`, `class-variance-authority`, `cn`, `tw-animate-css`. Development: `typescript`, `@types/*`, `tailwindcss`, `@tailwindcss/postcss`, `prettier`, `prettier-plugin-tailwindcss`, `eslint`, `eslint-config-next`, `tsx`.
+
+## 16. Running the Client Locally
 
 ```bash
 npm install
-npm run dev        # http://localhost:3000
-npm run build      # production build
-npm run lint       # eslint
-npm run typecheck  # tsc --noEmit
-npm run format     # prettier
+# create/populate .env (section 14)
+npm run dev      # http://localhost:3000
 ```
 
-**Environment variables (`.env`):**
+For full functionality also start the backend (`cd ../mentorlagbe-server && npm start`, default `http://localhost:5000`) and set `BACKEND_API_URL` / `INTERNAL_API_SECRET` to matching values. Run `npm run typecheck` and `npm run lint` before committing.
 
-```
-BETTER_AUTH_SECRET=<secret>
-BETTER_AUTH_URL=<app base url>
-BETTER_AUTH_DB_URI=<mongodb connection string>
-# Missing — required for Google sign-in:
-# GOOGLE_CLIENT_ID=<from Google Cloud Console>
-# GOOGLE_CLIENT_SECRET=<from Google Cloud Console>
-```
+## 17. Frontend Deployment
 
----
+The repository contains a Vercel project link (`.vercel/project.json`) and no `vercel.json`. Typical flow:
 
-## 11. Notifications (React-Toastify)
+1. Import the `mentorlagbe-client` repository in Vercel (framework preset: Next.js; root directory = client folder).
+2. Add all required environment variables from section 14 in the Vercel project settings (including the ones missing locally if those features are needed). Set `BACKEND_API_URL` to the deployed Express API and use matching `INTERNAL_API_SECRET` values in both projects.
+3. Register the deployed origin as a Better Auth trusted origin (`BETTER_AUTH_URL`), and configure Stripe webhook endpoint `<deployed-origin>/api/webhooks/stripe` with `STRIPE_WEBHOOK_SECRET`.
+4. Deploy; verify `npm run build` locally first. Node.js runtime is required for the MongoDB/Stripe route handlers (they declare `runtime = "nodejs"`).
 
-Global toasts are provided by **`react-toastify`**. A single themed
-`<AppToastContainer />` is mounted in `app/layout.tsx` inside `ThemeProvider`,
-so every page (marketing, auth and dashboard) shares one toast container.
+No Dockerfile or custom server is configured for the client.
 
-- `lib/notify.ts` — the only entry point for notifications: `notify.success`,
-  `notify.error`, `notify.warning`, `notify.info`, `notify.loading`,
-  `notify.promise` and `notify.dismiss`, plus `userMessage(error)` which turns
-  thrown values into short, user-safe descriptions.
-- `components/ui/toast-container.tsx` — the single global `ToastContainer`,
-  configured for bottom-right placement, dark theme, 4 second auto-close,
-  `Bounce` animation and a 4-toast limit.
-- `app/globals.css` — `.mentorlagbe-toasts` CSS variables restyle the container
-  with the site's dark surfaces and lime/rose/sky/amber accents.
+## 18. Current Frontend Implementation Status and Known Issues
 
-Use `notify` after an operation actually succeeds or fails; use
-`notify.promise()` for longer async work so a loading state is shown. Never
-show a success toast for a failed request, and avoid firing two toasts for the
-same action.
+**Implemented**: full marketing home, browse/detail pages, sign-in/sign-up with Better Auth, session-aware navbar and footer, all three role dashboards with real backend data, tuition CRUD, application apply/cancel/review, profile editing, image uploads, Stripe checkout/confirm/webhook, admin management screens, seed script, loading/error states and toasts.
 
-## 12. Seeding approved tuitions
+**Known gaps / issues**:
 
-`scripts/seed-tuitions.ts` inserts 12 realistic, approved tuition posts and
-connects each one to a **real Tutor account** already stored in the `user`
-collection (the script resolves `tutorId`, `tutorName` and `tutorEmail` from
-the database — no fake references).
+1. No `middleware.ts`; `DashboardGuard` and admin route handler checks are the only protection. Dashboard pages themselves are not server-guarded, and admin API proxies verify both session and role while some server actions rely on the backend's token check.
+2. Google OAuth button is wired but inactive because `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` are not configured.
+3. Stripe webhook needs `STRIPE_WEBHOOK_SECRET`; `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` is set but unused by code.
+4. Bookmarks are stored in a dedicated `bookmarks` collection on the backend (one row per student/tuition, compound unique index), with a free-student cap of 5 enforced server-side. The Pro Student "Save tutors and tuition posts" benefit is only partially covered: tuition bookmarks exist, but tutor bookmarks do not.
+5. Testimonial submission and admin moderation endpoints exist, but no frontend UI lets a Student/Tutor submit feedback or an Admin review it (only public display exists).
+6. `/api/admin/stats` and `requireAdmin()` duplicate role-check logic; the admin proxies depend on both the Next.js session and Express internal headers.
+7. `lib/dashboard-menu.ts` still contains logic for a `subscription` menu item and an "About" page/link no longer exists in the current nav; `/dashboard` renders `null` and relies on the client redirect.
+8. Footer legal links (Terms of Service, Privacy Policy) point to `/`.
+9. `globals.css` contains only Tailwind import, animation/keyframe and toast styling - no shadcn theme token block (`components.json` declares `cssVariables: true`), so token-based utility classes may have no CSS variables backing them.
+10. Theme defaults differ: `app/layout.tsx` passes `defaultTheme="light"` while `components/theme-provider.tsx` defaults to `"system"` (layout prop wins).
+11. `components/home/PlatformStats.tsx`, `Testimonials.tsx`, `FeaturedTuitions.tsx` and the listings page fetch on the client; failures are toast-only with retry buttons.
+12. Client-side validation is duplicated across forms and route handlers (intentional defence in depth); the backend remains the authority for ownership and roles.
+13. Image upload endpoints keep the ImgBB key server-side; the unauthenticated sign-up upload endpoint relies on an in-memory per-instance rate limit, which resets on restart and is not shared across instances.
+14. Seed script requires at least one existing Tutor account and uses `$setOnInsert`, so it will not update already-seeded posts.
 
-```bash
-npm run seed          # insert missing posts; safe to re-run
-npm run seed:dry      # preview the posts without writing
-```
-
-The script uses `BETTER_AUTH_DB_URI` from `.env`, targets the existing
-`mentor_lagbe.tuition` collection and is idempotent: document ids are derived
-from stable slugs and written with `$setOnInsert`, so re-running never creates
-duplicates and never overwrites existing records. It requires at least one
-account with `role: "Tutor"` to exist. Verify afterwards with
-`GET /all-tuitions` on the backend (or `/api/tuitions` through Next.js) — the
-seeded posts appear immediately because those routes use `cache: "no-store"`.
-
----
-
-## 13. Profile management
-
-`/dashboard/profile` is a server-rendered profile page with a client-side edit
-form (`components/dashboard/profile/profile-manager.tsx`). Updates go through
-`PATCH /api/profile`, which uses the Better Auth session and a strict whitelist
-(`name`, `phone`, `image`) — `role` and subscription fields can never be changed
-from the profile page. The shared `components/profile/profile-image-field.tsx`
-provides the image URL field and preview used by both this page and the sign-up
-form; on sign-up the URL is saved directly with the account. Tuition banner
-uploads still use `POST /api/uploads/imgbb`. The `phone` field is declared in
-`user.additionalFields` in `lib/auth.ts`.
-
----
-
-## 14. Token verification & backend API integration
-
-The Express backend has a single token-verification implementation in
-`mentorlagbe-server/src/middleware/verifytoken.js`. It resolves the Better Auth
-session token from `Authorization: Bearer <token>`, rejects missing/invalid/
-expired sessions with `401`, exposes the verified user as `req.user`, and
-`requireRole(...)` returns `403` for insufficient permissions. Every private
-route (tuition CRUD, applications, stats, user/admin/testimonial endpoints)
-uses this middleware; public browsing endpoints remain open. Controllers scope
-queries by `req.user.id` — client-supplied `tutorId`/`applicantId` values are
-never used for authorization.
-
-On the frontend, `lib/core/server.ts` is the single server-side API helper:
-`getSession()` / `getToken()` read the session cookie and `authFetch(url, init)`
-attaches the Bearer token. All server actions (`lib/actions/applications.ts`
-and `lib/actions/tuition.ts`), the admin/testimonial data helpers and the proxy
-routes use it rather than duplicating token/fetch logic. Tuition constants and
-types live in `lib/tuitions/options.ts` so client components can import them
-without pulling server-only code into the browser bundle.
-
----
-
-## 15. Note for Future Sessions (AI / collaborators)
-
-- Everything above reflects the code **as of 2026-11-18**. When unsure whether a feature exists, check the Status table in §2 and the actual files — do not implement anything listed as ✅ again.
-- The **next logical steps** are: finish the placeholder pages (starting with `/tuitions` listing and the role-based `/dashboard`), add auth guards for private routes, complete `globals.css` theme tokens, and scaffold the backend.
-- Next.js 16 here has breaking changes vs. older versions — read the bundled docs in `node_modules/next/dist/docs/` before writing Next.js-specific code (see `AGENTS.md`).
+This README was written from the source code in this repository (Next.js 16 App Router). When adding features, update both this file and the backend README as appropriate.

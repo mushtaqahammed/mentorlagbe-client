@@ -1,5 +1,6 @@
 import {
   BookOpen,
+  Bookmark,
   CreditCard,
   FileText,
   LayoutDashboard,
@@ -43,6 +44,12 @@ export const dashboardMenuByRole: Record<DashboardRole, DashboardMenuItem[]> = {
       label: "My Applications",
       href: "/dashboard/student/my-applications",
       icon: FileText,
+    },
+    {
+      id: "bookmarks",
+      label: "My Bookmarks",
+      href: "/dashboard/bookmarks",
+      icon: Bookmark,
     },
  
     {
@@ -193,6 +200,12 @@ export function isRoleDashboardPath(pathname: string) {
 export function getRouteOwnerRole(pathname: string): DashboardRole | null {
   const current = normalizePathname(pathname)
 
+  if (
+    current === "/dashboard/bookmarks" ||
+    current.startsWith("/dashboard/bookmarks/")
+  ) {
+    return "student"
+  }
   if (current === "/dashboard/student" || current.startsWith("/dashboard/student/")) {
     return "student"
   }

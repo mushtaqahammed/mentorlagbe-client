@@ -23,6 +23,7 @@ import {
   XCircle,
 } from "lucide-react"
 
+import { BookmarkButton } from "@/components/tuitions/bookmark-button"
 import { TuitionBanner } from "@/components/tuitions/tuition-banner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -508,11 +509,17 @@ export default function TuitionsPage() {
                 style={{ animationDelay: `${Math.min(index, 5) * 60}ms` }}
               >
                 <article className="flex h-full flex-col">
-                  <TuitionBanner
-                    src={tuition.bannerImage}
-                    alt={tuition.title || "Tuition banner"}
-                    subject={tuition.subject}
-                  />
+                  <div className="relative">
+                    <BookmarkButton
+                      tuitionId={tuition.id}
+                      className="absolute top-3 right-3 z-10"
+                    />
+                    <TuitionBanner
+                      src={tuition.bannerImage}
+                      alt={tuition.title || "Tuition banner"}
+                      subject={tuition.subject}
+                    />
+                  </div>
 
                   <div className="flex items-start justify-between gap-3">
                     <span className="inline-flex min-w-0 items-center gap-1.5 rounded-full bg-lime-400/10 px-2.5 py-1 text-[11px] font-semibold tracking-wide text-lime-300 ring-1 ring-lime-400/25">
