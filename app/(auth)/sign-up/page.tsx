@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { Loader2 } from "lucide-react"
 
 import {
   AuthInput,
@@ -37,6 +38,7 @@ export default function SignUpPage() {
 
   const [name, setName] = useState("")
   const [pending, setPending] = useState(false)
+  const [uploadingImage, setUploadingImage] = useState(false)
   const imageFieldRef = useRef<ProfileImageFieldHandle>(null)
   const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -87,6 +89,10 @@ export default function SignUpPage() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+
+    // The profile picture must finish uploading (or be explicitly skipped)
+    // before registration is allowed to start.
+    if (pending || uploadingImage) return
 
     const formData = new FormData(event.currentTarget)
     const data = Object.fromEntries(formData) as Record<string, string>
@@ -203,10 +209,21 @@ export default function SignUpPage() {
           ref={imageFieldRef}
           name={name || "User"}
           disabled={pending}
+          allowUpload
+          onUploadingChange={setUploadingImage}
         />
 
-        <SubmitButton disabled={pending}>
-          {pending ? "Creating account..." : "Sign Up"}
+        <SubmitButton disabled={pending || uploadingImage}>
+          {uploadingImage ? (
+            <>
+              <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+              Uploading image...
+            </>
+          ) : pending ? (
+            "Creating account..."
+          ) : (
+            "Sign Up"
+          )}
         </SubmitButton>
       </form>
 
