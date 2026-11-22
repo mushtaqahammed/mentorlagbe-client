@@ -1,7 +1,7 @@
 import { jsonAdminError, NO_STORE, requireAdmin } from "@/lib/admin/api-auth"
 import {
   ADMIN_TUITION_STATUSES,
-  ADMIN_TUITIONS_PAGE_SIZE,
+  ADMIN_TUITIONS_FETCH_LIMIT,
   type AdminTuitionStatus,
   type AdminTuitionStatusFilter,
 } from "@/lib/admin/types"
@@ -33,8 +33,8 @@ export async function GET(request: Request) {
     const page = parsePositiveInt(url.searchParams.get("page"), 1, 100_000)
     const limit = parsePositiveInt(
       url.searchParams.get("limit"),
-      ADMIN_TUITIONS_PAGE_SIZE,
-      50
+      ADMIN_TUITIONS_FETCH_LIMIT,
+      ADMIN_TUITIONS_FETCH_LIMIT
     )
 
     const result = await getAdminTuitions({

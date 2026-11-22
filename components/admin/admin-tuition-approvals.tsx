@@ -9,8 +9,6 @@ import {
   Check,
   CheckCircle2,
   ChevronDown,
-  ChevronLeft,
-  ChevronRight,
   Clock3,
   FileSearch,
   Globe2,
@@ -34,7 +32,7 @@ import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { notify as uiNotify } from "@/lib/notify"
 import {
-  ADMIN_TUITIONS_PAGE_SIZE,
+  ADMIN_TUITIONS_FETCH_LIMIT,
   type AdminApiError,
   type AdminTuition,
   type AdminTuitionApprovalResponse,
@@ -428,8 +426,6 @@ export function AdminTuitionApprovals() {
     approved: 0,
     rejected: 0,
   })
-  const [totalPages, setTotalPages] = useState(1)
-  const [page, setPage] = useState(1)
   const [search, setSearch] = useState("")
   const [debouncedSearch, setDebouncedSearch] = useState("")
   const [subject, setSubject] = useState("all")
@@ -447,7 +443,6 @@ export function AdminTuitionApprovals() {
   useEffect(() => {
     const timeout = window.setTimeout(() => {
       setDebouncedSearch(search)
-      setPage(1)
     }, 250)
 
     return () => window.clearTimeout(timeout)
@@ -463,8 +458,7 @@ export function AdminTuitionApprovals() {
       setError("")
 
       const params = new URLSearchParams({
-        page: String(page),
-        limit: String(ADMIN_TUITIONS_PAGE_SIZE),
+        limit: String(ADMIN_TUITIONS_FETCH_LIMIT),
         sort,
       })
       if (debouncedSearch.trim()) params.set("search", debouncedSearch.trim())
@@ -472,29 +466,49 @@ export function AdminTuitionApprovals() {
       if (statusFilter !== "all") params.set("status", statusFilter)
 
       try {
-        const response = await fetch(
-          `/api/admin/tuitions?${params.toString()}`,
-          {
-            cache: "no-store",
-            signal: options?.signal,
-          }
-        )
-        const data: AdminTuitionsResponse | AdminApiError =
-          await response.json()
+        const fetchPage = async (page: number) => {
+          const pageParams = new URLSearchParams(params)
+          pageParams.set("page", String(page))
 
-        if (!response.ok) {
-          throw new Error(errorMessage(data, "Could not load tuition posts."))
+          const response = await fetch(
+            `/api/admin/tuitions?${pageParams.toString()}`,
+            {
+              cache: "no-store",
+              signal: options?.signal,
+            }
+          )
+          const data: AdminTuitionsResponse | AdminApiError =
+            await response.json()
+
+          if (!response.ok) {
+            throw new Error(errorMessage(data, "Could not load tuition posts."))
+          }
+
+          return data as AdminTuitionsResponse
         }
 
+        // Load the first page for its metadata, then follow up with any
+        // remaining pages so every matching tuition is shown in the list.
+        let result = await fetchPage(1)
         if (requestId !== requestIdRef.current) return
 
-        const result = data as AdminTuitionsResponse
+        while (
+          result.tuitions.length < result.total &&
+          result.page < result.totalPages
+        ) {
+          const next = await fetchPage(result.page + 1)
+          if (requestId !== requestIdRef.current) return
+
+          result = {
+            ...next,
+            tuitions: [...result.tuitions, ...next.tuitions],
+          }
+        }
+
         setTuitions(result.tuitions)
         setTotal(result.total)
         setTotalTuitions(result.totalTuitions)
         setCounts(result.counts)
-        setTotalPages(result.totalPages)
-        if (result.page !== page) setPage(result.page)
       } catch (loadError) {
         if (loadError instanceof Error && loadError.name === "AbortError")
           return
@@ -511,7 +525,7 @@ export function AdminTuitionApprovals() {
         }
       }
     },
-    [debouncedSearch, page, sort, statusFilter, subject]
+    [debouncedSearch, sort, statusFilter, subject]
   )
 
   useEffect(() => {
@@ -595,15 +609,12 @@ export function AdminTuitionApprovals() {
     setSubject("all")
     setStatusFilter("all")
     setSort("latest")
-    setPage(1)
   }
 
   const isFiltering =
     Boolean(debouncedSearch.trim()) ||
     subject !== "all" ||
     statusFilter !== "all"
-  const start = total === 0 ? 0 : (page - 1) * ADMIN_TUITIONS_PAGE_SIZE + 1
-  const end = Math.min(page * ADMIN_TUITIONS_PAGE_SIZE, total)
 
   return (
     <>
@@ -665,10 +676,7 @@ export function AdminTuitionApprovals() {
                 key={tab.value}
                 type="button"
                 aria-pressed={active}
-                onClick={() => {
-                  setStatusFilter(tab.value)
-                  setPage(1)
-                }}
+                onClick={() => setStatusFilter(tab.value)}
                 className={cn(
                   "flex items-center justify-between gap-2 rounded-xl border px-3 py-2.5 text-left transition-all focus-visible:ring-4 focus-visible:ring-lime-400/25 focus-visible:outline-none",
                   active
@@ -712,10 +720,7 @@ export function AdminTuitionApprovals() {
               {search ? (
                 <button
                   type="button"
-                  onClick={() => {
-                    setSearch("")
-                    setPage(1)
-                  }}
+                  onClick={() => setSearch("")}
                   aria-label="Clear search"
                   className="absolute top-1/2 right-3 -translate-y-1/2 rounded-full p-1 text-neutral-500 transition-colors hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-lime-400/60 focus-visible:outline-none"
                 >
@@ -727,10 +732,7 @@ export function AdminTuitionApprovals() {
             <div className="relative">
               <select
                 value={subject}
-                onChange={(event) => {
-                  setSubject(event.target.value)
-                  setPage(1)
-                }}
+                onChange={(event) => setSubject(event.target.value)}
                 aria-label="Filter tuitions by subject"
                 className="h-11 w-full appearance-none rounded-xl border border-white/10 bg-neutral-950/60 pr-9 pl-3 text-sm font-semibold text-white transition-colors outline-none hover:border-white/20 focus-visible:border-lime-400/60 focus-visible:ring-4 focus-visible:ring-lime-400/15"
               >
@@ -750,10 +752,7 @@ export function AdminTuitionApprovals() {
             <div className="relative">
               <select
                 value={sort}
-                onChange={(event) => {
-                  setSort(event.target.value as SortOption)
-                  setPage(1)
-                }}
+                onChange={(event) => setSort(event.target.value as SortOption)}
                 aria-label="Sort tuitions"
                 className="h-11 w-full appearance-none rounded-xl border border-white/10 bg-neutral-950/60 pr-9 pl-3 text-sm font-semibold text-white transition-colors outline-none hover:border-white/20 focus-visible:border-lime-400/60 focus-visible:ring-4 focus-visible:ring-lime-400/15"
               >
@@ -874,7 +873,7 @@ export function AdminTuitionApprovals() {
           </div>
         ) : (
           <>
-            <div className="mt-5 hidden overflow-x-auto rounded-2xl border border-white/10 md:block">
+            <div className="mt-5 hidden max-h-[600px] overflow-x-auto overflow-y-auto rounded-2xl border border-white/10 md:block">
               <table className="w-full min-w-[1080px] border-collapse text-left text-sm">
                 <thead className="bg-white/[0.03] text-[10px] font-semibold tracking-wider text-neutral-500 uppercase">
                   <tr>
@@ -900,7 +899,7 @@ export function AdminTuitionApprovals() {
               </table>
             </div>
 
-            <div className="mt-5 grid gap-3 md:hidden">
+            <div className="mt-5 grid max-h-[600px] gap-3 overflow-y-auto md:hidden">
               {tuitions.map((tuition) => (
                 <TuitionMobileCard
                   key={tuition.id}
@@ -913,42 +912,10 @@ export function AdminTuitionApprovals() {
 
             <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-neutral-400">
               <span>
-                Showing {numberFormatter.format(start)}–
-                {numberFormatter.format(end)} of {numberFormatter.format(total)}
+                Showing all {numberFormatter.format(tuitions.length)} of{" "}
+                {numberFormatter.format(total)} tuition
+                {total === 1 ? "" : "s"}
               </span>
-              {totalPages > 1 ? (
-                <div className="flex items-center gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      setPage((current) => Math.max(1, current - 1))
-                    }
-                    disabled={page <= 1 || refreshing}
-                    className="h-8 gap-1 rounded-lg border-white/15 bg-white/5 px-2.5 text-xs font-semibold text-neutral-200 hover:bg-white/10 hover:text-white"
-                  >
-                    <ChevronLeft className="size-3.5" aria-hidden="true" />
-                    Previous
-                  </Button>
-                  <span className="px-2 font-semibold text-white tabular-nums">
-                    {page} / {totalPages}
-                  </span>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      setPage((current) => Math.min(totalPages, current + 1))
-                    }
-                    disabled={page >= totalPages || refreshing}
-                    className="h-8 gap-1 rounded-lg border-white/15 bg-white/5 px-2.5 text-xs font-semibold text-neutral-200 hover:bg-white/10 hover:text-white"
-                  >
-                    Next
-                    <ChevronRight className="size-3.5" aria-hidden="true" />
-                  </Button>
-                </div>
-              ) : null}
             </div>
           </>
         )}

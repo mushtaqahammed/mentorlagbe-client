@@ -65,7 +65,11 @@ export type AdminTuitionStatus = (typeof ADMIN_TUITION_STATUSES)[number]
 
 export type AdminTuitionStatusFilter = AdminTuitionStatus | "all"
 
-export const ADMIN_TUITIONS_PAGE_SIZE = 6
+/**
+ * Number of tuition records requested per API call. The admin page fetches
+ * every page and combines the results so all listings are displayed.
+ */
+export const ADMIN_TUITIONS_FETCH_LIMIT = 50
 
 export type AdminTuitionCounts = Record<AdminTuitionStatusFilter, number>
 
