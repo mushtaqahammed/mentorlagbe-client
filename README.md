@@ -1,3 +1,11 @@
+# Email & Password
+admin:admin@gmail.com
+student:student@gmail.com
+tutor:tutor@gmail.com
+
+password:22446688
+
+
 # MentorLagbe Client
 
 MentorLagbe is a premium tuition and mentorship marketplace for Bangladesh. This repository contains the **Next.js frontend**; the Express/MongoDB backend lives in the sibling repository `../mentorlagbe-server` and has its own README. Both applications share one MongoDB database (`mentor_lagbe`).
