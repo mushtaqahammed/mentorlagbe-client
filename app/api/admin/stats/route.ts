@@ -1,35 +1,18 @@
+import { jsonAdminError, NO_STORE, requireAdmin } from "@/lib/admin/api-auth"
 import { getAdminStats } from "@/lib/admin/stats"
-import { getSession } from "@/lib/core/server"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
 
-const NO_STORE = { "Cache-Control": "no-store" } as const
-
-function jsonError(message: string, status: number) {
-  return Response.json({ error: message }, { status, headers: NO_STORE })
-}
-
 export async function GET() {
+  const guard = await requireAdmin()
+  if (!guard.ok) return jsonAdminError(guard.error, guard.status)
+
   try {
-    // Verify the Better Auth session on the server; never trust a frontend
-    // role check for an endpoint that exposes platform-wide data.
-    const session = await getSession()
-
-    if (!session?.user) {
-      return jsonError("Authentication required.", 401)
-    }
-
-    // Roles are stored as "Admin" / "Tutor" / "Student" in MongoDB.
-    if (String(session.user.role).trim().toLowerCase() !== "admin") {
-      return jsonError("Admin access required.", 403)
-    }
-
-    const stats = await getAdminStats(String(session.user.id))
-
+    const stats = await getAdminStats(guard.userId)
     return Response.json(stats, { headers: NO_STORE })
   } catch (error) {
     console.error("Failed to load admin statistics:", error)
-    return jsonError("Could not load platform statistics.", 500)
+    return jsonAdminError("Could not load platform statistics.", 500)
   }
 }

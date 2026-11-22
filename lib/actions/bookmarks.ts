@@ -5,7 +5,9 @@ import { authFetch } from "@/lib/core/server"
 const BASE_URL = process.env.BACKEND_API_URL || "http://localhost:5000"
 
 export type BookmarkItem = {
+  /** Tuition id - kept as `id` so cards and detail links stay unchanged. */
   id: string
+  /** The id of the row in the `bookmarks` collection. */
   bookmarkId?: string
   savedAt?: string | null
   available: boolean
@@ -21,6 +23,7 @@ export type BookmarkItem = {
   tutorId: string | null
   tutorName: string | null
   tutorEmail: string | null
+  /** Original stored values, e.g. "Approved" / "Active". */
   approvalStatus: string | null
   status: string | null
   createdAt: string | null
@@ -33,28 +36,30 @@ export type BookmarksResponse = {
   limit: number | null
 }
 
+/** Actions return errors as data so a failed backend call is not logged as a
+ * 500 by Next.js and callers can show the real reason in the UI. */
 export type BookmarkActionResult<T> =
-  { ok: true; data: T } | { ok: false; error: string }
+  | { ok: true; data: T }
+  | { ok: false; error: string }
 
 async function describeError(res: Response, fallback: string): Promise<string> {
   const text = await res.text().catch(() => "")
 
   let detail: string | undefined
-
   try {
     const data = JSON.parse(text) as { error?: unknown; message?: unknown }
-
-    if (typeof data.error === "string" && data.error) {
-      detail = data.error
-    } else if (typeof data.message === "string" && data.message) {
-      detail = data.message
-    }
+    if (typeof data.error === "string" && data.error) detail = data.error
+    else if (typeof data.message === "string" && data.message) detail = data.message
   } catch {
-    // Handle non-JSON responses.
+    // Non-JSON bodies (for example a 404 HTML page) are handled below.
   }
 
   if (res.status === 404) {
-    return "Bookmarks API not found. Check your backend URL and bookmark routes."
+    return (
+      "The bookmarks API is not available on the configured backend (404). " +
+      "Deploy the latest server code or set BACKEND_API_URL to a server that " +
+      "includes the bookmark routes."
+    )
   }
 
   return detail || `${fallback} (HTTP ${res.status})`
@@ -66,97 +71,42 @@ async function request<T>(
   fallback: string
 ): Promise<BookmarkActionResult<T>> {
   try {
-    console.log(`[Bookmark API] Request: ${path}`)
-
     const res = await authFetch(`${BASE_URL}${path}`, init)
-
-    console.log(`[Bookmark API] Status: ${res.status}`)
-
-    if (!res.ok) {
-      const error = await describeError(res, fallback)
-
-      console.error("[Bookmark API] Error:", error)
-
-      return { ok: false, error }
-    }
-
-    const data = (await res.json()) as T
-
-    console.log("[Bookmark API] Response:", data)
-
-    return { ok: true, data }
+    if (!res.ok) return { ok: false, error: await describeError(res, fallback) }
+    return { ok: true, data: (await res.json()) as T }
   } catch (error) {
-    const message = error instanceof Error ? error.message : fallback
-
-    console.error("[Bookmark API] Request failed:", message)
-
-    return { ok: false, error: message }
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : fallback,
+    }
   }
 }
 
-// Get all bookmarks with complete tuition details.
 export const getBookmarks = async (): Promise<
   BookmarkActionResult<BookmarksResponse>
-> => {
-  const result = await request<BookmarksResponse>(
+> =>
+  request<BookmarksResponse>(
     "/bookmarks",
     undefined,
     "Could not load your bookmarks."
   )
 
-  if (result.ok) {
-    console.log("========== SAVED TUITION DETAILS ==========")
-
-    console.table(
-      result.data.bookmarks.map((bookmark) => ({
-        tuitionId: bookmark.id,
-        title: bookmark.title,
-        subject: bookmark.subject,
-        classLevel: bookmark.classLevel,
-        monthlyFee: bookmark.monthlyFee,
-        mode: bookmark.mode,
-        location: bookmark.location,
-        tutorName: bookmark.tutorName,
-        approvalStatus: bookmark.approvalStatus,
-        status: bookmark.status,
-        available: bookmark.available,
-      }))
-    )
-
-    console.log("Complete Tuition Data:", result.data.bookmarks)
-    console.log("Total Bookmarks:", result.data.count)
-    console.log("Current Plan:", result.data.plan)
-    console.log("Bookmark Limit:", result.data.limit)
-  }
-
-  return result
-}
-
-// Add a tuition bookmark.
 export const addBookmark = async (
   tuitionId: string
 ): Promise<BookmarkActionResult<BookmarksResponse>> => {
-  if (!tuitionId?.trim()) {
-    return { ok: false, error: "Invalid tuition ID." }
-  }
+  if (!tuitionId?.trim()) return { ok: false, error: "Invalid tuition ID." }
 
   return request<BookmarksResponse>(
     `/bookmarks/${encodeURIComponent(tuitionId)}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-    },
+    { method: "POST", headers: { "Content-Type": "application/json" } },
     "Could not save this tuition."
   )
 }
 
-// Remove a tuition bookmark.
 export const removeBookmark = async (
   tuitionId: string
 ): Promise<BookmarkActionResult<BookmarksResponse>> => {
-  if (!tuitionId?.trim()) {
-    return { ok: false, error: "Invalid tuition ID." }
-  }
+  if (!tuitionId?.trim()) return { ok: false, error: "Invalid tuition ID." }
 
   return request<BookmarksResponse>(
     `/bookmarks/${encodeURIComponent(tuitionId)}`,

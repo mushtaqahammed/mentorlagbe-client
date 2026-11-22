@@ -16,11 +16,6 @@ export function isAdminUserRole(value: unknown): value is AdminUserRole {
   return (ADMIN_USER_ROLES as readonly string[]).includes(normalized)
 }
 
-export function normalizeAdminUserRole(value: unknown): AdminUserRole {
-  const normalized = typeof value === "string" ? value.trim().toLowerCase() : ""
-  return isAdminUserRole(normalized) ? normalized : "student"
-}
-
 export function isValidObjectId(value: string) {
   return /^[a-f\d]{24}$/i.test(value)
 }

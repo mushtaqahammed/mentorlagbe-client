@@ -1,23 +1,10 @@
 export {
-  CardSkeleton,
-  DashboardLoader,
-  PageLoader,
-  SectionHeadingSkeleton,
-  Skeleton,
-  SkeletonAvatar,
-  SkeletonBadge,
-  SkeletonButton,
-  TableSkeleton,
-} from "./primitives"
-
-export {
   AuthLoader,
   HomeLoader,
   HowItWorksLoader,
   PaymentLoader,
   PaymentSuccessLoader,
   PricingLoader,
-  TuitionCardSkeleton,
   TuitionDetailLoader,
   TuitionsLoader,
 } from "./public-loaders"

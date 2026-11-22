@@ -13,7 +13,7 @@ export const authClient = createAuthClient({
   plugins: [inferAdditionalFields<typeof auth>()],
 })
 
-export const { signIn, signUp, signOut, useSession } = authClient
+export const { signOut, useSession } = authClient
 
 /**
  * Ask every `useSession()` subscriber to refetch once through Better Auth's

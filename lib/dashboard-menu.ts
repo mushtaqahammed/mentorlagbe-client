@@ -51,7 +51,6 @@ export const dashboardMenuByRole: Record<DashboardRole, DashboardMenuItem[]> = {
       href: "/dashboard/bookmarks",
       icon: Bookmark,
     },
- 
     {
       id: "profile",
       label: "My Profile",
@@ -84,7 +83,6 @@ export const dashboardMenuByRole: Record<DashboardRole, DashboardMenuItem[]> = {
       href: "/dashboard/tutor/applicants",
       icon: Users,
     },
-   
     {
       id: "profile",
       label: "My Profile",
@@ -156,12 +154,6 @@ export function isDashboardMenuItemActive(
   const current = normalizePathname(pathname)
   const target = normalizePathname(item.href)
 
-  // "My Subscription" and "My Profile" intentionally share the profile
-  // route. Highlight only the profile entry for an exact path match.
-  if (item.id === "subscription" && current === target) {
-    return false
-  }
-
   if (item.id === "overview") {
     return current === target
   }
@@ -183,18 +175,6 @@ export function getDashboardPageTitle(role: DashboardRole, pathname: string) {
   }
 
   return "Dashboard"
-}
-
-export function isRoleDashboardPath(pathname: string) {
-  const current = normalizePathname(pathname)
-  return (
-    current === "/dashboard/student" ||
-    current.startsWith("/dashboard/student/") ||
-    current === "/dashboard/tutor" ||
-    current.startsWith("/dashboard/tutor/") ||
-    current === "/dashboard/admin" ||
-    current.startsWith("/dashboard/admin/")
-  )
 }
 
 export function getRouteOwnerRole(pathname: string): DashboardRole | null {

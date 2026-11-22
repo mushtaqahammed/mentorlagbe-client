@@ -51,14 +51,6 @@ export type TuitionRecord = TuitionInput & {
   updatedAt?: string | null
 }
 
-export type PlanUsage = {
-  plan: "free" | "pro"
-  used: number
-  limit: number | null
-  remaining: number | null
-  unlimited: boolean
-}
-
 export type TutorStats = {
   totalTuitions: number
   activeApprovedTuitions: number

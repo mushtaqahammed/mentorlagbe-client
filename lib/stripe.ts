@@ -17,8 +17,6 @@ if (!secretKey) {
  *
  * The key itself is never exported or sent to the client.
  */
-export const usingRestrictedStripeKey = secretKey.startsWith("rk_")
-
 export const stripePermissionMessage =
   "Stripe rejected the request because the configured API key is missing permissions. " +
   "Enable Checkout Sessions Read/Write and Subscriptions Read on the restricted key, " +

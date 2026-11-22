@@ -5,7 +5,6 @@ import {
 } from "@/lib/backend-api"
 import { getToken } from "@/lib/core/server"
 import {
-  ADMIN_TUITION_STATUSES,
   type AdminTuition,
   type AdminTuitionStatus,
   type AdminTuitionStatusFilter,
@@ -14,13 +13,6 @@ import {
 import { isValidObjectId } from "@/lib/admin/users"
 
 export type TuitionSort = "latest" | "oldest"
-
-export function normalizeApprovalStatus(value: unknown): AdminTuitionStatus {
-  const normalized = typeof value === "string" ? value.trim().toLowerCase() : ""
-  return (ADMIN_TUITION_STATUSES as readonly string[]).includes(normalized)
-    ? (normalized as AdminTuitionStatus)
-    : "pending"
-}
 
 export function parseTuitionSort(value: string | null): TuitionSort {
   return value?.trim().toLowerCase() === "oldest" ? "oldest" : "latest"
